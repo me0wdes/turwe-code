@@ -836,7 +836,9 @@ export default function App() {
                   )}
                   <Composer
                     platform={state.platform}
-                    motionEnabled={state.settings.motion}
+                    motionEnabled={
+                      state.settings.motion && state.settings.homeAnimation
+                    }
                     value={draft}
                     onChange={changeDraft}
                     onSend={() => void send()}

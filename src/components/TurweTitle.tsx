@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useReducedMotion } from "motion/react";
+import { useChatMotion } from "../chat-motion";
 
 // Adapted from the ASCII text lens supplied by the user (Meowdes reference).
 const TEXT = "Turwe code";
@@ -10,8 +10,8 @@ const MONO = '"Cascadia Mono", Consolas, monospace';
 export function TurweTitle({ motionEnabled }: { motionEnabled: boolean }) {
   const root = useRef<HTMLHeadingElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
-  const reducedMotion = useReducedMotion();
-  const animated = motionEnabled && !reducedMotion;
+  const motionAllowed = useChatMotion();
+  const animated = motionEnabled && motionAllowed;
 
   useEffect(() => {
     const host = root.current,

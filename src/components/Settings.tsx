@@ -309,6 +309,27 @@ export function SettingsDialog({
             </div>
             <div className="setting-row">
               <div>
+                <strong>Анимация главного экрана</strong>
+                <p>
+                  Выключите, чтобы надпись Turwe code оставалась статичной и
+                  потребляла меньше ресурсов.
+                </p>
+              </div>
+              <button
+                className="switch"
+                role="switch"
+                aria-label="Анимация главного экрана"
+                aria-checked={state.settings.homeAnimation}
+                disabled={busy}
+                onClick={() =>
+                  void save({ homeAnimation: !state.settings.homeAnimation })
+                }
+              >
+                <span />
+              </button>
+            </div>
+            <div className="setting-row">
+              <div>
                 <strong>Звуки интерфейса</strong>
                 <p>Отправка, завершение ответа и копирование</p>
               </div>

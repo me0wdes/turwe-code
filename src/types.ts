@@ -189,6 +189,7 @@ export interface Settings {
   sounds: boolean;
   volume: number;
   motion: boolean;
+  homeAnimation: boolean;
   subagents?: boolean;
 }
 export interface McpField {

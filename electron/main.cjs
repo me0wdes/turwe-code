@@ -482,6 +482,7 @@ async function invoke(method, args) {
         "sounds",
         "volume",
         "motion",
+        "homeAnimation",
         "subagents",
         "theme",
         "effort",
@@ -496,7 +497,7 @@ async function invoke(method, args) {
       }
       if ("theme" in input) next.theme = validateTheme(input.theme);
       if ("baseUrl" in input) next.baseUrl = normalizeBaseUrl(input.baseUrl);
-      for (const k of ["sounds", "motion", "subagents"])
+      for (const k of ["sounds", "motion", "homeAnimation", "subagents"])
         if (k in input) {
           if (typeof input[k] !== "boolean")
             throw new Error("Некорректная настройка");

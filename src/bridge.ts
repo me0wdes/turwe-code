@@ -26,6 +26,7 @@ const defaultState: AppState = {
     sounds: true,
     volume: 0.2,
     motion: true,
+    homeAnimation: true,
     subagents: true,
   },
   hasKey: false,
@@ -45,6 +46,7 @@ function previewBridge(): DesktopBridge {
         hasKey: false,
         platform: "preview",
         settings: {
+          ...defaultState.settings,
           ...value.settings,
           theme: normalizeTheme(value.settings?.theme),
         },

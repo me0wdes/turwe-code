@@ -6,7 +6,7 @@
 
 **Скачать:** [последний выпуск для Windows и macOS](https://github.com/me0wdes/turwe-code/releases/latest).
 
-**Windows:** откройте `Turwe-Code-0.6.16-Windows.exe` из Releases. Установка не нужна. Данные сохраняются в `%APPDATA%/Turwe Code` и остаются после закрытия переносимого приложения. Если запущена предыдущая версия, сначала закройте её: приложение разрешает только одно окно процесса.
+**Windows:** откройте файл `Turwe-Code-<версия>-Windows.exe` из последнего выпуска в Releases. Установка не нужна. Данные сохраняются в `%APPDATA%/Turwe Code` и остаются после закрытия переносимого приложения. Если запущена предыдущая версия, сначала закройте её: приложение разрешает только одно окно процесса.
 
 **macOS:** выберите `macOS-arm64.dmg` для Apple Silicon (M1 и новее) или `macOS-x64.dmg` для Intel. Перенесите приложение из DMG в Applications; данные сохраняются в `~/Library/Application Support/Turwe Code`. Сборки используют ad-hoc подпись, без Apple notarization: первый запуск может потребовать разрешения в «Конфиденциальность и безопасность». Подробности — [Windows, macOS и GitHub](docs/distribution.md).
 

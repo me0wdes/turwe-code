@@ -15,6 +15,7 @@ const DEFAULT_SETTINGS = {
   sounds: true,
   volume: 0.2,
   motion: true,
+  homeAnimation: true,
   subagents: true,
   effort: "auto",
 };
