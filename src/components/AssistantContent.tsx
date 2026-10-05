@@ -6,6 +6,7 @@ import { assistantSteps } from "../activity";
 import type { ApprovalChoice, Message, QuestionResponse } from "../types";
 import { IconButton } from "./Primitives";
 import { ToolCalls } from "./ToolCalls";
+import { activeStatuses } from "../agents";
 
 export function AssistantContent({
   message,
@@ -28,6 +29,7 @@ export function AssistantContent({
   onAgentOpen: (id: string) => void;
   onCopy: (text: string) => void;
 }) {
+  const copyDisabled = activeStatuses.includes(message.status!);
   return (
     <div className="assistant-timeline">
       {assistantSteps(message).map((step) => (
@@ -45,10 +47,15 @@ export function AssistantContent({
                     <div className="code-block">
                       <div className="code-heading">
                         <span>Код</span>
-                        <IconButton label="Копировать код" onClick={(event) => {
-                          const text = event.currentTarget.closest(".code-block")?.querySelector("code")?.textContent;
-                          if (text) onCopy(text);
-                        }}><Copy size={13} /></IconButton>
+                        <IconButton
+                          label="Копировать код"
+                          disabled={copyDisabled}
+                          title={copyDisabled ? "Копирование доступно после завершения ответа" : "Копировать код"}
+                          onClick={(event) => {
+                            const text = event.currentTarget.closest(".code-block")?.querySelector("code")?.textContent;
+                            if (text) onCopy(text);
+                          }}
+                        ><Copy size={13} /></IconButton>
                       </div>
                       <pre>{children}</pre>
                     </div>

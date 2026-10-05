@@ -17,6 +17,7 @@ import { AttachmentCard, attachmentKey } from "./Attachments";
 import { fluid } from "../motion";
 import { useChatMotion } from "../chat-motion";
 import { ThinkingIndicator } from "./ThinkingIndicator";
+import { activeStatuses } from "../agents";
 interface Props {
   session: Session;
   onRetry: () => void;
@@ -329,6 +330,16 @@ export function Conversation({
                 {message.content && (
                   <IconButton
                     label="Копировать сообщение"
+                    disabled={
+                      message.role === "assistant" &&
+                      activeStatuses.includes(message.status!)
+                    }
+                    title={
+                      message.role === "assistant" &&
+                      activeStatuses.includes(message.status!)
+                        ? "Копирование доступно после завершения ответа"
+                        : "Копировать сообщение"
+                    }
                     onClick={() => void copy(message.content)}
                   >
                     <Copy size={14} />
