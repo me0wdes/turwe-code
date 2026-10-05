@@ -51,6 +51,21 @@ test("editing preserves CRLF, detects stale editor and restores a checkpoint", a
   assert.deepEqual(await files.changes(session), []);
 });
 
+test("project paths use native canonical roots when legacy realpath resolves a different mount alias", async (t) => {
+  const { files, project, session } = await setup(t);
+  await fs.writeFile(path.join(project, "inside.txt"), "mounted-root-marker");
+  const syncFs = require("node:fs"), legacy = syncFs.realpathSync;
+  t.mock.method(syncFs, "realpathSync", (value, ...args) =>
+    path.resolve(value) === path.resolve(project)
+      ? path.join(path.dirname(project), "legacy-mount-alias")
+      : legacy(value, ...args));
+  const read = await files.read(session, { path: "inside.txt" });
+  assert.equal(read.path, "inside.txt");
+  assert.equal(read.external, false);
+  assert.deepEqual((await files.glob(session, {})).files, ["inside.txt"]);
+  assert.equal((await files.grep(session, { pattern: "mounted-root-marker" })).matches[0].path, "inside.txt");
+});
+
 test("full-file writes require the read hash and deletion patches reject stale content", async (t) => {
   const { files, project, session } = await setup(t);
   await files.write(session, { path: "a.txt", content: "original\n" });

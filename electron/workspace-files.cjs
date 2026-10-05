@@ -124,7 +124,9 @@ function createWorkspaceFiles({ store, directory }) {
   function location(session, target) {
     let base = readRoot(session);
     try {
-      base = require("node:fs").realpathSync(base);
+      // Match fs.promises.realpath used for targets. Legacy realpathSync can
+      // choose a different Windows mount/drive alias for the same directory.
+      base = require("node:fs").realpathSync.native(base);
     } catch {}
     const relative = path.relative(base, target);
     const ownerProject =
