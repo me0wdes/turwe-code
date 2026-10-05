@@ -1,0 +1,8 @@
+{
+  "baseUrl": "https://ai.lab.pics/v1",
+  "defaultModel": "claude-opus-5-5",
+  "models": [
+    { "id": "claude-opus-5-5", "name": "Claude Opus 5.5" },
+    { "id": "claude-sonnet-5", "name": "Claude Sonnet 5" }
+  ]
+}

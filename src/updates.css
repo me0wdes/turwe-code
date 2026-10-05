@@ -1,0 +1,23 @@
+.update-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  align-self: center;
+  flex-shrink: 0;
+  max-width: calc(100% - 32px);
+  margin: 10px 16px 0;
+  padding: 7px 10px 7px 14px;
+  border-radius: 14px;
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: 12px;
+  box-shadow: 0 4px 18px rgb(0 0 0 / .12);
+}
+.update-notice > svg { flex-shrink: 0; color: var(--muted); }
+.update-notice > span { min-width: 0; }
+.update-notice button { flex-shrink: 0; }
+.update-notice .icon-button { width: 28px; height: 28px; }
+.update-settings { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border); }
+.update-settings strong { font-size: 13px; }
+.update-settings p { color: var(--muted); font-size: 12px; line-height: 1.6; margin: 8px 0 14px; }
+.update-settings-actions { display: flex; gap: 10px; flex-wrap: wrap; }

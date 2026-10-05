@@ -1,0 +1,110 @@
+.chat-setup {
+  max-width: 570px;
+  padding: 20px;
+  margin: 10px 0;
+  background: var(--surface);
+  border-radius: 20px;
+  color: var(--text);
+}
+.chat-setup-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.chat-setup-heading > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.chat-setup-heading strong {
+  font-size: 15px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.chat-setup-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: var(--canvas);
+}
+.chat-setup-status,
+.chat-setup-endpoint,
+.chat-setup-scope {
+  font-size: 12px;
+  color: var(--muted);
+}
+.chat-setup-scope {
+  margin-left: auto;
+  max-width: 38%;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.chat-setup-endpoint {
+  display: block;
+  margin-top: 16px;
+  overflow-wrap: anywhere;
+}
+.chat-setup p {
+  margin: 12px 0 0;
+  color: var(--secondary);
+  font-size: 13px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.chat-setup p.chat-setup-error {
+  color: var(--error);
+}
+.chat-setup-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chat-setup-actions:not(:empty) {
+  margin-top: 18px;
+}
+.chat-setup-actions button {
+  min-height: 36px;
+  border-radius: 11px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.chat-setup-disclosure,
+.chat-setup-help {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.chat-setup-disclosure {
+  padding: 8px 0;
+  margin-top: 8px;
+  border-radius: 6px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+.chat-setup-disclosure:hover,
+.chat-setup-help:hover {
+  color: var(--text);
+}
+.chat-setup-source {
+  overflow: hidden;
+}
+.chat-setup-source pre {
+  max-height: 260px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 14px;
+  margin: 4px 0 0;
+  background: var(--canvas);
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.6;
+}

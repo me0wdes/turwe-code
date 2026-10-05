@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="/" />
+    <title>Turwe Code · Sidebar QA</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <button id="restore-qa" style="position:fixed;top:8px;right:180px;z-index:12;font-size:10px;color:#aaa;border-radius:8px;padding:5px 8px;background:#303030">Восстановить тестовые чаты</button>
+    <script type="module" src="/tests/interaction-preview.tsx"></script>
+    <script type="module">
+      document.getElementById('restore-qa').onclick = async () => {
+        await fetch('/__interaction', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({method:'restoreQaChats'}) });
+      };
+    </script>
+  </body>
+</html>

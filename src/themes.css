@@ -1,0 +1,174 @@
+/* Palette sources checked 2026-10-04:
+ * Claude Code: claude.ai/code shared-styles, color-version v2 dark CDS tokens.
+ * ChatGPT: chatgpt.com/unauth-mweb/assets/stylex-initial-modern-zNrYfl6Y.css,
+ * dark neutral values (no optional account accent override).
+ * Ancillary surfaces use the same ramps. ChatGPT is the default palette.
+ * Scoped defaults make both previews independent of the active theme.
+ */
+:root,
+[data-theme="claude-code"],
+[data-theme="chatgpt"] {
+  --canvas: #212121;
+  --canvas-rgb: 33 33 33;
+  --sidebar: #181818;
+  --sidebar-rgb: 24 24 24;
+  --surface: #303030;
+  --surface-hover: #414141;
+  --surface-raised: #414141;
+  --surface-chip: #414141;
+  --surface-control: #414141;
+  --composer-base: #303030;
+  --dialog: #303030;
+  --popover: #2a2a2a;
+  --inset: #212121;
+  --agent-surface: #212121;
+  --text: #ffffff;
+  --body-text: #ffffff;
+  --secondary: #cdcdcd;
+  --muted: #afafaf;
+  --hint: #afafaf;
+  --status-neutral: #cdcdcd;
+  --status-complete: #cdcdcd;
+  --accent: #ffffff;
+  --accent-hover: #e8e8e8;
+  --on-accent: #0d0d0d;
+  --primary-ink: #0d0d0d;
+  --control-selected: #ffffff;
+  --switch-off: #414141;
+  --disabled-fill: #414141;
+  --overlay-rgb: 255 255 255;
+  --line: #ffffff1a;
+  --border-strong: #ffffff26;
+  --error: #ff6764;
+  --error-bg: #4d100e;
+  --error-border: #ff676433;
+  --danger-fill: #b52924;
+  --danger-hover: #c53630;
+  --on-danger: #ffffff;
+  --success: #42dec2;
+  --warning: #ffcc38;
+  --agent-warning: #ffcc38;
+  --warning-soft: #fee096;
+  --warning-bg: #5c2605;
+}
+
+[data-theme="claude-code"] {
+  --canvas: #151515; /* CDS gray-850 / bg-100 */
+  --canvas-rgb: 21 21 21;
+  --sidebar: #111111; /* CDS gray-870 / bg-200 */
+  --sidebar-rgb: 17 17 17;
+  --surface: #20201f; /* CDS gray-800 / bg-000 */
+  --surface-hover: #2c2c2a; /* CDS gray-750 */
+  --surface-raised: #383835; /* CDS gray-700 */
+  --surface-chip: #2c2c2a;
+  --surface-control: #383835;
+  --composer-base: #1e1e1d; /* CDS gray-810 */
+  --dialog: #20201f;
+  --popover: #20201f;
+  --inset: #151515;
+  --agent-surface: #1e1e1d;
+  --text: #f9f9f7; /* CDS gray-20 / text-100 */
+  --body-text: #f9f9f7;
+  --secondary: #c3c2b7; /* CDS gray-200 / text-200 */
+  --muted: #97958d; /* CDS gray-350 / text-400 */
+  --hint: #97958d;
+  --status-neutral: #c3c2b7;
+  --status-complete: #c3c2b7;
+  --accent: #d97757; /* CDS clay / brand-100 */
+  --accent-hover: #c6613f;
+  --on-accent: #131313;
+  --primary-ink: #131313;
+  --control-selected: #d97757;
+  --switch-off: #383835;
+  --disabled-fill: #383835;
+  --overlay-rgb: 225 224 217; /* CDS gray-100 / border-100 */
+  --line: #e1e0d90f;
+  --border-strong: #e1e0d924;
+  --error: #f4abab; /* CDS red-200 */
+  --error-bg: #e6676710;
+  --error-border: #e6676738;
+  --danger-fill: #b63232;
+  --danger-hover: #c33c3c;
+  --success: #91d68b; /* CDS green-200 */
+  --warning: #fab219; /* CDS yellow-200 */
+  --agent-warning: #fab219;
+  --warning-soft: #fab219;
+  --warning-bg: #fab21908;
+}
+
+.theme-picker {
+  border: 0;
+  margin: 0 0 28px;
+  padding: 0;
+  min-width: 0;
+}
+.theme-picker legend {
+  padding: 0;
+  font-size: 12px;
+  font-weight: 550;
+}
+.theme-picker > p {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.6;
+  margin: 6px 0 15px;
+}
+.theme-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.theme-option {
+  position: relative;
+  display: block;
+  min-width: 0;
+  cursor: pointer;
+}
+.theme-option > input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.theme-preview {
+  display: flex;
+  height: 92px;
+  overflow: hidden;
+  border: 1px solid rgb(var(--overlay-rgb) / 0.15);
+  border-radius: 12px;
+  background: var(--canvas);
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition: outline-color var(--moderate) ease, transform var(--moderate) var(--ease-out);
+}
+.theme-option:hover .theme-preview { transform: translateY(-2px); }
+.theme-option:has(input:checked) .theme-preview { outline-color: var(--accent); }
+.theme-option:has(input:focus-visible) { outline: 2px solid var(--text); outline-offset: 7px; border-radius: 10px; }
+.theme-picker[aria-busy="true"] .theme-option { cursor: wait; }
+.theme-picker[aria-busy="true"] .theme-preview { transform: none; }
+.theme-preview-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 27%;
+  padding: 14px 7px;
+  background: var(--sidebar);
+}
+.theme-preview i { display: block; height: 3px; border-radius: 3px; background: var(--muted); opacity: 0.5; }
+.theme-preview-sidebar i:first-child { background: var(--text); margin-bottom: 8px; }
+.theme-preview-chat { display: flex; flex-direction: column; flex: 1; gap: 9px; padding: 13px 9px 9px; min-width: 0; }
+.theme-preview-bubble { align-self: flex-end; width: 52%; height: 11px; border-radius: 5px; background: var(--surface); }
+.theme-preview-lines { display: grid; gap: 4px; margin-right: 12px; }
+.theme-preview-lines i { background: var(--secondary); }
+.theme-preview-lines i:last-child { width: 62%; }
+.theme-preview-composer { display: flex; align-items: center; gap: 5px; margin-top: auto; padding: 5px; height: 20px; border-radius: 7px; background: var(--surface); }
+.theme-preview-composer > i { width: 35%; height: 2px; }
+.theme-preview-composer > span { display: grid; place-items: center; width: 12px; height: 12px; border-radius: 50%; margin-left: auto; background: var(--accent); color: var(--on-accent); }
+.theme-option-label { display: flex; align-items: center; justify-content: space-between; gap: 4px; margin: 12px 0 4px; }
+.theme-option-label strong { font-size: 11px; }
+.theme-option-label svg { visibility: hidden; color: var(--text); }
+.theme-option:has(input:checked) .theme-option-label svg { visibility: visible; }
+.theme-option-description { color: var(--muted); font-size: 9px; line-height: 1.5; display: block; }
+:root[data-motion="off"] .theme-preview { transition: none; }
+@media (prefers-reduced-motion: reduce) { .theme-preview { transition: none; } }

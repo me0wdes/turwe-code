@@ -1,0 +1,452 @@
+{
+  "source": "https://mishanaer-icons.vercel.app/",
+  "mapping": {
+    "PanelLeftOpen": "arrow-from-line-right",
+    "Folder": "folder",
+    "Minus": "minus",
+    "Square": "square",
+    "X": "x",
+    "Code2": "code",
+    "ChevronRight": "chevron-right",
+    "FolderPlus": "folder-plus",
+    "ArrowUp": "arrow-up",
+    "Plus": "plus",
+    "Paperclip": "paperclip",
+    "Sparkles": "sparkles",
+    "Copy": "copy",
+    "RotateCcw": "arrow-rotate-ccw-up",
+    "AlertCircle": "exclamation-circle",
+    "ArrowDown": "arrow-down",
+    "Check": "check",
+    "ChevronDown": "chevron-down",
+    "RefreshCw": "arrows-rotate-cw-horizontal",
+    "FileCode2": "file",
+    "ChevronLeft": "chevron-left",
+    "Search": "magnifying-glass",
+    "MessageSquare": "chat-bubble",
+    "Archive": "archive",
+    "KeyRound": "key",
+    "Volume2": "volume-2",
+    "LoaderCircle": "arrows-rotate-cw-horizontal",
+    "Eye": "eye",
+    "EyeOff": "eye-slash",
+    "ExternalLink": "arrow-from-square-up-right",
+    "Settings2": "gear",
+    "MoreHorizontal": "dots-three-horizontal",
+    "Monitor": "desktop",
+    "PanelLeftClose": "arrow-to-line-left",
+    "SquarePen": "pencil-square",
+    "VolumeX": "volume-x",
+    "Upload": "arrow-from-bracket-up",
+    "FileText": "file-txt",
+    "ArrowUpRight": "arrow-from-square-up-right",
+    "FolderSearch": "magnifying-glass",
+    "Pencil": "pencil",
+    "Trash2": "bin",
+    "PanelLeft": "panel-left",
+    "ListQueued": "indent-increase",
+    "Grid2": "grid-columns-2",
+    "ArrowLeft": "arrow-left",
+    "ArrowRight": "arrow-right",
+    "Globe": "globe",
+    "Camera": "camera",
+    "Printer": "printer",
+    "Layers": "layers",
+    "CornerDownRight": "arrow-turn-down-right"
+  },
+  "stroke": [
+    {
+      "name": "archive",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/archive.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "arrow-down",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/arrow-down.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "arrow-from-bracket-up",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/arrow-from-bracket-up.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "arrow-from-line-right",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/arrow-from-line-right.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "arrow-from-square-up-right",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/arrow-from-square-up-right.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "arrow-rotate-ccw-up",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/arrow-rotate-ccw-up.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "arrow-to-line-left",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/arrow-to-line-left.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "arrow-up",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/arrow-up.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "arrows-rotate-cw-horizontal",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/arrows-rotate-cw-horizontal.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "bin",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/bin.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "chat-bubble",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/chat-bubble.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "check",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/check.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "chevron-down",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/chevron-down.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "chevron-left",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/chevron-left.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "chevron-right",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/chevron-right.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "code",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/code.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "copy",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/copy.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "desktop",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/desktop.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "dots-three-horizontal",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/dots-three-horizontal.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "exclamation-circle",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/exclamation-circle.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "eye",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/eye.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "eye-slash",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/eye-slash.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "file",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/file.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "file-txt",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/file-txt.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "folder",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/folder.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "folder-plus",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/folder-plus.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "gear",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/gear.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "grid-columns-2",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/grid-columns-2.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "indent-increase",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/indent-increase.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "key",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/key.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "magnifying-glass",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/magnifying-glass.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "minus",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/minus.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "paperclip",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/paperclip.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "pencil",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/pencil.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "pencil-square",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/pencil-square.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "plus",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/plus.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "sparkles",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/sparkles.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "square",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/square.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "volume-2",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/volume-2.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "volume-x",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/volume-x.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "x",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/x.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "arrow-left",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/arrow-left.svg"
+    },
+    {
+      "name": "arrow-right",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/arrow-right.svg"
+    },
+    {
+      "name": "globe",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/globe.svg"
+    },
+    {
+      "name": "camera",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/camera.svg"
+    },
+    {
+      "name": "printer",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/printer.svg"
+    },
+    {
+      "name": "layers",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/layers.svg"
+    },
+    {
+      "name": "arrow-turn-down-right",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/line/arrow-turn-down-right.svg"
+    }
+  ],
+  "filled": [
+    {
+      "name": "archive",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/archive.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "arrow-down",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/arrow-down.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "arrow-from-bracket-up",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/arrow-from-bracket-up.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "arrow-from-line-right",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/arrow-from-line-right.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "arrow-from-square-up-right",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/arrow-from-square-up-right.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "arrow-rotate-ccw-up",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/arrow-rotate-ccw-up.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "arrow-to-line-left",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/arrow-to-line-left.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "arrow-up",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/arrow-up.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "arrows-rotate-cw-horizontal",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/arrows-rotate-cw-horizontal.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "bin",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/bin.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "chat-bubble",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/chat-bubble.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "check",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/check.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "chevron-down",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/chevron-down.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "chevron-left",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/chevron-left.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "chevron-right",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/chevron-right.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "code",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/code.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "copy",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/copy.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "desktop",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/desktop.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "dots-three-horizontal",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/dots-three-horizontal.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "exclamation-circle",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/exclamation-circle.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "eye",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/eye.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "eye-slash",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/eye-slash.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "file",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/file.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "file-txt",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/file-txt.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "folder",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/folder.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "folder-plus",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/folder-plus.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "gear",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/gear.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "grid-columns-2",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/grid-columns-2.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "indent-increase",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/indent-increase.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "key",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/key.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "magnifying-glass",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/magnifying-glass.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "minus",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/minus.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "paperclip",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/paperclip.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "pencil",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/pencil.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "pencil-square",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/pencil-square.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "plus",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/plus.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "sparkles",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/sparkles.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "square",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/square.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "volume-2",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/volume-2.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "volume-x",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/volume-x.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "x",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/x.svg?v=catalog-20261002-tabbar"
+    },
+    {
+      "name": "arrow-left",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/arrow-left.svg"
+    },
+    {
+      "name": "arrow-right",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/arrow-right.svg"
+    },
+    {
+      "name": "globe",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/globe.svg"
+    },
+    {
+      "name": "camera",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/camera.svg"
+    },
+    {
+      "name": "printer",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/printer.svg"
+    },
+    {
+      "name": "layers",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/layers.svg"
+    },
+    {
+      "name": "arrow-turn-down-right",
+      "url": "https://mishanaer-icons.vercel.app/icons/round/solid/arrow-turn-down-right.svg"
+    }
+  ],
+  "derivations": [
+    {
+      "name": "panel-left",
+      "basedOn": "grid-columns-2",
+      "description": "Retains the Mishanaer Round outline, 3px outer corner radii and 2px edge thickness. Narrows the left section; Filled keeps the outside frame and fills only that section so the control reads as a sidebar, not a pause button."
+    }
+  ]
+}

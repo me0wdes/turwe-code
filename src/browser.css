@@ -1,0 +1,327 @@
+.workbench.browser-workbench .workbench-content.tab-preview {
+  padding: 0 8px 8px;
+  gap: 0;
+  overflow: hidden;
+}
+.browser-workbench .workbench-heading {
+  padding-bottom: 6px;
+}
+.browser-pane {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 8px;
+}
+.browser-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 2px 8px;
+  position: relative;
+  flex-shrink: 0;
+}
+.browser-navigation {
+  display: flex;
+  align-items: center;
+  padding: 3px;
+  border-radius: 24px;
+  background: var(--surface);
+}
+.browser-pane .icon-button {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: var(--secondary);
+}
+.browser-pane .icon-button:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+.browser-pane .icon-button:disabled {
+  opacity: 0.3;
+  background: transparent;
+}
+.browser-nav-divider {
+  height: 15px;
+  width: 1px;
+  background: var(--line);
+  margin: 0 3px;
+}
+.browser-address {
+  min-width: 0;
+  flex: 1;
+  position: relative;
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px transparent;
+  transition:
+    box-shadow 0.16s ease,
+    background 0.16s ease;
+}
+.browser-address.is-editing {
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--border-strong);
+}
+.browser-address-icon {
+  position: absolute;
+  left: 12px;
+  top: 11px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.workbench .browser-address input:not([type="checkbox"]) {
+  height: 36px;
+  padding: 0 30px;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  text-align: center;
+  outline: none;
+  font-size: 12px;
+  text-overflow: ellipsis;
+}
+.workbench .browser-address.is-editing input {
+  text-align: left;
+}
+.workbench .browser-address.has-address:not(.is-editing) input {
+  color: transparent;
+}
+.browser-address-label {
+  position: absolute;
+  inset: 0 30px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 36px;
+  text-align: center;
+  font-size: 12px;
+  pointer-events: none;
+}
+.browser-pane .browser-menu-trigger {
+  width: 36px;
+  height: 36px;
+  background: var(--surface);
+}
+.browser-menu {
+  width: 290px;
+  padding: 7px;
+}
+.browser-menu .dropdown-item {
+  min-height: 36px;
+  font-size: 12px;
+  gap: 10px;
+  border-radius: 10px;
+}
+.browser-menu .dropdown-item > span {
+  flex: 1;
+}
+.browser-zoom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: var(--secondary);
+}
+.browser-zoom > div {
+  display: flex;
+  gap: 1px;
+  align-items: center;
+  padding: 2px;
+  border-radius: 10px;
+  background: var(--canvas);
+}
+.browser-zoom .icon-button {
+  width: 25px;
+  height: 26px;
+  border-radius: 8px;
+}
+.browser-zoom-value {
+  background: transparent;
+  border: 0;
+  min-width: 42px;
+  height: 26px;
+  color: var(--text);
+  border-radius: 7px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.browser-zoom-value:hover,
+.browser-zoom [data-highlighted] {
+  background: var(--surface-hover);
+}
+.browser-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--line);
+}
+.browser-progress::after {
+  content: "";
+  display: block;
+  height: 100%;
+  width: 35%;
+  background: var(--secondary);
+  border-radius: inherit;
+  animation: browser-loading 1.3s ease-in-out infinite;
+}
+@keyframes browser-loading {
+  from {
+    transform: translateX(-110%);
+  }
+  to {
+    transform: translateX(390%);
+  }
+}
+.browser-pane .browser-surface {
+  position: relative;
+  min-height: 80px;
+  flex: 1;
+  background: var(--canvas);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.browser-frozen {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  position: absolute;
+  inset: 0;
+}
+.browser-page-state {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  gap: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+.browser-page-state > svg {
+  opacity: 0.55;
+  margin-bottom: 3px;
+}
+.workbench .browser-page-state h3 {
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--text);
+  margin: 0;
+}
+.browser-page-state p {
+  max-width: 310px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+.browser-page-state button {
+  margin-top: 5px;
+  font-size: 12px;
+}
+.browser-page-state.is-error > svg {
+  color: var(--secondary);
+  opacity: 0.75;
+}
+.browser-find {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px 4px 10px;
+  border-radius: 12px;
+  background: var(--canvas);
+  flex-shrink: 0;
+  color: var(--muted);
+  animation: browser-controls-in 0.16s ease-out;
+}
+.workbench .browser-find input:not([type="checkbox"]) {
+  background: transparent;
+  border: none;
+  outline: none;
+  border-radius: 0;
+  flex: 1;
+  font-size: 12px;
+  padding: 5px;
+  height: 30px;
+}
+.browser-find-count {
+  font-size: 10px;
+  flex-shrink: 0;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  padding: 0 5px;
+}
+.browser-console {
+  flex-shrink: 0;
+  max-height: 35%;
+  min-height: 100px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--canvas);
+  border-radius: 12px;
+  animation: browser-controls-in 0.16s ease-out;
+}
+.browser-console header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 7px 5px 12px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.browser-console header > span {
+  flex: 1;
+}
+.browser-console-output {
+  overflow: auto;
+  padding: 0 12px 10px;
+  font:
+    11px/1.6 Consolas,
+    monospace;
+}
+.browser-console-output p {
+  color: var(--muted);
+  font-family: inherit;
+}
+.browser-log {
+  padding: 5px 0;
+  border-top: 1px solid var(--line);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.browser-log.level-error,
+.browser-log.level-3 {
+  color: var(--error);
+}
+@keyframes browser-controls-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .browser-progress::after,
+  .browser-console,
+  .browser-find {
+    animation: none;
+  }
+}
+[data-motion="off"] .browser-progress::after,
+[data-motion="off"] .browser-console,
+[data-motion="off"] .browser-find {
+  animation: none;
+}

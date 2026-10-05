@@ -1,0 +1,123 @@
+.dropdown-content.model-controls-menu {
+  width: 318px;
+  max-height: min(590px, var(--radix-dropdown-menu-content-available-height));
+}
+
+.model-controls-menu .model-menu-options {
+  max-height: 210px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.model-controls-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 10px 12px;
+  color: var(--secondary);
+  font-size: 12px;
+}
+
+.model-controls-label small {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.model-effort-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 3px;
+  margin: 0 5px;
+  padding: 4px;
+  background: var(--inset);
+  border-radius: 12px;
+}
+
+.model-effort-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 6px 4px;
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+}
+
+.model-effort-option[data-state="checked"] {
+  color: var(--text);
+  background: var(--surface-control);
+}
+
+.model-effort-option[data-highlighted] {
+  color: var(--text);
+  outline: 1px solid var(--border-strong);
+  outline-offset: -1px;
+}
+
+.model-effort-option[data-disabled] {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.model-effort-detail {
+  min-height: 28px;
+  margin: 8px 10px 3px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.model-context {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+}
+
+.model-context-ring {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  fill: none;
+  stroke-width: 3;
+}
+
+.model-context-track {
+  stroke: var(--border-strong);
+}
+
+.model-context-value {
+  stroke: var(--secondary);
+  stroke-linecap: round;
+}
+
+.model-context-ring[data-warning="true"] .model-context-value {
+  stroke: var(--warning);
+}
+
+.model-context-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.model-context-copy strong {
+  color: var(--secondary);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.model-compact-action {
+  margin-top: 2px;
+}
+
+.model-controls-menu[data-state="closed"] {
+  animation-timing-function: var(--ease-out);
+}

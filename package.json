@@ -1,0 +1,111 @@
+{
+  "name": "turwe-code",
+  "version": "0.6.16",
+  "private": true,
+  "description": "Turwe Code — local AI workspace for Windows and macOS",
+  "author": "Turwe",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 5186",
+    "build": "tsc --noEmit && vite build",
+    "test": "node --test tests/*.test.cjs",
+    "start": "electron .",
+    "postinstall": "node node_modules/electron/install.js",
+    "native:check": "node scripts/check-native.cjs",
+    "native:rebuild": "electron-builder install-app-deps",
+    "package:win": "node scripts/check-native.cjs win32 x64 && npm run build && electron-builder --win portable --x64 --publish never",
+    "package:mac": "node scripts/check-native.cjs darwin && npm run build && electron-builder --mac dmg zip --publish never",
+    "package:mac:arm64": "node scripts/check-native.cjs darwin arm64 && npm run build && electron-builder --mac dmg zip --arm64 --publish never",
+    "package:mac:x64": "node scripts/check-native.cjs darwin x64 && npm run build && electron-builder --mac dmg zip --x64 --publish never",
+    "smoke:package": "node scripts/smoke-package.cjs"
+  },
+  "dependencies": {
+    "@codemirror/lang-javascript": "^6.2.5",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/theme-one-dark": "^6.1.3",
+    "@codemirror/view": "^6.43.13",
+    "@fontsource-variable/inter": "^5.3.0",
+    "@modelcontextprotocol/sdk": "^1.32.0",
+    "@radix-ui/react-dialog": "^1.1.23",
+    "@radix-ui/react-dropdown-menu": "^2.1.24",
+    "@vscode/ripgrep": "^1.18.0",
+    "@xterm/addon-fit": "^0.11.0",
+    "@xterm/xterm": "^6.0.0",
+    "codemirror": "^6.0.2",
+    "diff": "^9.0.0",
+    "ffmpeg-static": "^5.3.0",
+    "mammoth": "^1.13.0",
+    "minimatch": "^10.2.6",
+    "motion": "^14.0.0",
+    "node-pty": "^1.1.0",
+    "pdfjs-dist": "^6.4.299",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "typescript-language-server": "^6.0.1",
+    "typescript-lsp": "npm:typescript@^5.9.3",
+    "vscode-jsonrpc": "^9.0.3",
+    "yaml": "^2.9.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "electron": "^44.5.1",
+    "electron-builder": "^26.15.3",
+    "prettier": "^3.9.9",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.2"
+  },
+  "build": {
+    "appId": "app.turwe.code",
+    "productName": "Turwe Code",
+    "electronDist": "node_modules/electron/dist",
+    "npmRebuild": false,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json",
+      "THIRD_PARTY_NOTICES.md"
+    ],
+    "win": {
+      "target": "portable",
+      "icon": "public/icon.ico",
+      "signExecutable": false
+    },
+    "portable": {
+      "artifactName": "Turwe-Code-${version}-Windows.exe"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "icon": "public/icon.png",
+      "category": "public.app-category.developer-tools",
+      "artifactName": "Turwe-Code-${version}-macOS-${arch}.${ext}",
+      "identity": "-",
+      "hardenedRuntime": false,
+      "notarize": false
+    },
+    "asarUnpack": [
+      "node_modules/ffmpeg-static/**/*",
+      "node_modules/node-pty/**/*",
+      "node_modules/typescript-lsp/**/*",
+      "node_modules/typescript-language-server/**/*",
+      "node_modules/@vscode/ripgrep*/**/*"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/me0wdes/turwe-code.git"
+  },
+  "homepage": "https://github.com/me0wdes/turwe-code"
+}

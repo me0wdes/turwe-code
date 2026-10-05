@@ -1,0 +1,97 @@
+.thinking-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.62em;
+  max-width: 100%;
+  padding: 9px 0;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.54;
+}
+.thinking-glyph {
+  flex: none;
+  width: 1.54em;
+  height: 1.54em;
+  color: color-mix(in srgb, currentColor 55%, transparent);
+}
+.thinking-words {
+  display: inline-grid;
+  min-width: 0;
+  overflow: hidden;
+}
+/* Every phrase occupies the same cell, reserving the longest phrase's width. */
+.thinking-phrase {
+  grid-area: 1 / 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  opacity: 0;
+  color: color-mix(in srgb, var(--text) 85%, transparent);
+}
+.thinking-phrase.is-current {
+  opacity: 1;
+}
+.thinking-indicator[data-animated="true"] .thinking-phrase-label {
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--text) 52%, transparent) 35%,
+    color-mix(in srgb, var(--text) 88%, transparent) 50%,
+    color-mix(in srgb, var(--text) 52%, transparent) 65%
+  );
+  background-size: 300% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.thinking-indicator[data-animated="true"]
+  :is(.is-current, .is-leaving)
+  .thinking-phrase-label {
+  animation: thinking-shimmer 1.5s ease-in-out infinite;
+}
+.thinking-indicator[data-animated="true"] .thinking-phrase.is-entering {
+  animation: thinking-phrase-in var(--slow) var(--ease-out) both;
+}
+.thinking-indicator[data-animated="true"] .thinking-phrase.is-leaving {
+  animation: thinking-phrase-out var(--moderate) var(--ease-out) both;
+}
+@keyframes thinking-shimmer {
+  from {
+    background-position: 0% 0;
+  }
+  to {
+    background-position: 100% 0;
+  }
+}
+@keyframes thinking-phrase-in {
+  from {
+    transform: translateY(80%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes thinking-phrase-out {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(-80%);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thinking-indicator .thinking-phrase,
+  .thinking-indicator .thinking-phrase-label {
+    animation: none !important;
+  }
+  .thinking-indicator .thinking-phrase-label {
+    background: none;
+    -webkit-text-fill-color: currentColor;
+  }
+}
