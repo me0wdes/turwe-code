@@ -36,6 +36,20 @@ async function main() {
   if (status !== 0) throw new Error(`Packaged app exited with ${status}`);
   const report = JSON.parse(fs.readFileSync(path.join(output, "launch.json"), "utf8"));
   if (!report.loaded || report.hasKey || !report.sandbox) throw new Error(`Unexpected startup report: ${JSON.stringify(report)}`);
+  // Test the helpers that were actually shipped, including their executable
+  // permissions and app.asar.unpacked paths, without repairing the app bundle.
+  const nativeExecutable = process.platform === "win32"
+    ? path.join(release, "win-unpacked", "Turwe Code.exe") : executable;
+  const appPath = process.platform === "win32"
+    ? path.join(release, "win-unpacked", "resources", "app.asar")
+    : path.resolve(path.dirname(executable), "../Resources/app.asar");
+  const native = spawnSync(nativeExecutable, [path.join(__dirname, "check-native.cjs"), "--electron-probe", appPath], {
+    cwd: root, env: { ...env, ELECTRON_RUN_AS_NODE: "1" }, encoding: "utf8", windowsHide: true, timeout: 60000,
+  });
+  fs.writeFileSync(path.join(output, "native.log"), `${native.stdout || ""}${native.stderr || ""}`);
+  if (native.error || native.status !== 0) throw new Error(`Packaged native tools failed: ${native.error?.message || native.stderr || native.signal || native.status}`);
+  report.nativeTools = true;
+  fs.writeFileSync(path.join(output, "launch.json"), JSON.stringify(report));
   console.log(`Packaged app smoke OK: ${process.platform}-${process.arch}, Electron ${report.electron}`);
   console.log(`Evidence: ${output}`);
 }

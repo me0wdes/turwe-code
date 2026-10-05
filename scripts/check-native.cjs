@@ -1,18 +1,22 @@
 /* Check the actual Electron runtime, not the ABI of the host Node process. */
 const { spawnSync } = require("node:child_process");
 const path = require("node:path");
-require("./prepare-native.cjs");
+const { createRequire } = require("node:module");
+const { pathToFileURL } = require("node:url");
 
 async function probe() {
-  const pty = require("node-pty");
-  const { rgPath } = await import("@vscode/ripgrep");
-  const ffmpeg = require("ffmpeg-static");
+  const appPath = process.argv[process.argv.indexOf("--electron-probe") + 1];
+  const fromApp = appPath ? createRequire(path.join(appPath, "package.json")) : require;
+  const pty = fromApp("node-pty");
+  const { rgPath } = await import(pathToFileURL(fromApp.resolve("@vscode/ripgrep")).href);
+  const ffmpeg = fromApp("ffmpeg-static");
   for (const [name, binary, args] of [
     ["ripgrep", rgPath, ["--version"]],
     ["FFmpeg", ffmpeg, ["-version"]],
   ]) {
     if (!binary) throw new Error(`${name}: no binary for this platform`);
-    const result = spawnSync(binary, args, { encoding: "utf8", windowsHide: true, timeout: 15000 });
+    const executable = binary.replace(/app\.asar([\\/])/, "app.asar.unpacked$1");
+    const result = spawnSync(executable, args, { encoding: "utf8", windowsHide: true, timeout: 15000 });
     if (result.error || result.status !== 0) throw new Error(`${name}: ${result.error?.message || result.stderr}`);
     console.log(`${name}: ${result.stdout.split(/\r?\n/)[0]}`);
   }
@@ -38,6 +42,7 @@ async function probe() {
 if (process.argv.includes("--electron-probe")) {
   probe().then(() => process.exit(0)).catch((error) => { console.error(error.message); process.exit(1); });
 } else {
+  require("./prepare-native.cjs");
   const [targetPlatform = process.platform, targetArch = process.arch] = process.argv.slice(2);
   if (targetPlatform !== process.platform || targetArch !== process.arch) {
     console.error(`Build ${targetPlatform}-${targetArch} on a matching runner. This machine is ${process.platform}-${process.arch}; FFmpeg, ripgrep and Electron must match.`);
