@@ -43,6 +43,8 @@ npm run native:check
 
 При смене Electron/нативной зависимости или отсутствии подходящей готовой сборки выполните `npm run native:rebuild`, затем снова `npm run native:check`. Пересборка требует инструментов C++ соответствующей системы (Xcode Command Line Tools на Mac; Visual Studio Build Tools на Windows). Успешный `require()` в обычном Node.js не заменяет проверку Electron. Бинарники node-pty, FFmpeg, ripgrep и языкового сервера выносятся из ASAR.
 
+`scripts/prepare-native.cjs` исправляет права на macOS `spawn-helper` из npm-пакета node-pty 1.1.0: upstream поставляет его без execute-bit. Это выполняется после `npm ci` и перед нативной проверкой, до упаковки и подписи. Установленное приложение не меняет собственную подпись или права и не требует для этого администратора.
+
 ## Подпись и первый запуск
 
 Сейчас Windows EXE без сертификата подписи; Windows может показать SmartScreen. macOS использует локальную подпись ad-hoc (`identity: "-"`, `hardenedRuntime: false`), без сертификата Developer ID и notarization. Она не подтверждает автора приложения; Gatekeeper может заблокировать скачанную сборку. Для публичного выпуска с обычным запуском нужно подключить Developer ID, hardened runtime, подходящие entitlements и notarization на Mac. Сертификаты и Apple credentials должны находиться в GitHub Secrets, а не в исходниках. Текущий workflow не требует и не использует эти секреты.

@@ -1,6 +1,7 @@
 /* Check the actual Electron runtime, not the ABI of the host Node process. */
 const { spawnSync } = require("node:child_process");
 const path = require("node:path");
+require("./prepare-native.cjs");
 
 async function probe() {
   const pty = require("node-pty");
@@ -16,6 +17,7 @@ async function probe() {
     console.log(`${name}: ${result.stdout.split(/\r?\n/)[0]}`);
   }
   await new Promise((resolve, reject) => {
+    console.log("Checking PTY spawn and output...");
     const token = "turwe-native-ready";
     const windows = process.platform === "win32";
     const terminal = pty.spawn(windows ? process.env.ComSpec || "cmd.exe" : "/bin/sh",
@@ -45,6 +47,9 @@ if (process.argv.includes("--electron-probe")) {
     env: { ...process.env, ELECTRON_RUN_AS_NODE: "1" }, stdio: "inherit", windowsHide: true, timeout: 60000,
   });
   if (result.error) console.error(result.error.message);
-  if (result.status !== 0) console.error("Native tools failed. Reinstall on this platform with npm ci; if an addon has no compatible prebuild, run npm run native:rebuild, then npm run native:check.");
+  if (result.status !== 0) {
+    console.error(`Native probe exited with status ${result.status}, signal ${result.signal || "none"}`);
+    console.error("Native tools failed. Reinstall on this platform with npm ci; if an addon has no compatible prebuild, run npm run native:rebuild, then npm run native:check.");
+  }
   process.exitCode = result.status === 0 ? 0 : 1;
 }

@@ -11,7 +11,7 @@
     "build": "tsc --noEmit && vite build",
     "test": "node --test tests/*.test.cjs",
     "start": "electron .",
-    "postinstall": "node node_modules/electron/install.js",
+    "postinstall": "node node_modules/electron/install.js && node scripts/prepare-native.cjs",
     "native:check": "node scripts/check-native.cjs",
     "native:rebuild": "electron-builder install-app-deps",
     "package:win": "node scripts/check-native.cjs win32 x64 && npm run build && electron-builder --win portable --x64 --publish never",

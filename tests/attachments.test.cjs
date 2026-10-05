@@ -274,10 +274,23 @@ test("normalizes JPEG, WebP and GIF into images accepted by the model", async (t
 });
 
 test("cancels an active media decoder and removes its incomplete files", async (t) => {
-  const { store, directory } = await fixture(t);
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 40);
-  t.after(() => clearTimeout(timer));
+  const childProcess = require("node:child_process");
+  const spawn = childProcess.spawn;
+  let decoder;
+  // Synchronize with the real process: a tiny image can finish in under 40 ms
+  // on a fast Mac, so cancelling after a fixed delay does not test cancellation.
+  t.mock.method(childProcess, "spawn", (...args) => {
+    decoder = spawn(...args);
+    decoder.once("spawn", () => controller.abort());
+    return decoder;
+  });
+  const filename = require.resolve("../electron/attachments.cjs");
+  const cached = require.cache[filename];
+  delete require.cache[filename];
+  t.after(() => { if (cached) require.cache[filename] = cached; else delete require.cache[filename]; });
+  const { store, directory } = await fixture(t);
   await assert.rejects(store.importBytes(bytes("image.png", PNG), { signal: controller.signal }), { name: "AbortError" });
+  assert.ok(decoder?.killed, "the active decoder receives a kill signal");
   assert.deepEqual(await fs.readdir(directory), []);
 });
