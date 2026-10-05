@@ -936,6 +936,7 @@ p {
   font-size: 11px;
 }
 .conversation-region {
+  --conversation-fade-height: 48px;
   position: relative;
   flex: 1;
   min-height: 0;
@@ -943,6 +944,20 @@ p {
 .conversation-region:not([hidden]) {
   display: flex;
   flex-direction: column;
+}
+.conversation-region:not([hidden])::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: auto 0 0;
+  height: var(--conversation-fade-height);
+  background: linear-gradient(
+    to bottom,
+    rgb(var(--canvas-rgb) / 0),
+    rgb(var(--canvas-rgb) / 0.55) 50%,
+    var(--canvas)
+  );
+  pointer-events: none;
 }
 .conversation-scroll {
   flex: 1;
@@ -960,6 +975,10 @@ p {
   margin-bottom: 30px;
   min-width: 0;
   transform-origin: left bottom;
+}
+/* Keep the final message's controls above the fade when scrolled to the end. */
+.conversation > .message:last-child {
+  margin-bottom: var(--conversation-fade-height);
 }
 .message.user {
   --bubble-width: 85%;
