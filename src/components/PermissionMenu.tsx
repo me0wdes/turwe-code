@@ -3,24 +3,29 @@ import type { PermissionMode } from "../types";
 import { Dropdown, Menu, MenuChoice } from "./Dropdown";
 
 const modes: { value: PermissionMode; label: string; detail: string }[] = [
-  {value:'plan',label:'План',detail:'Исследование без правок. Выполнение после утверждения плана.'},
   {
     value: "ask",
-    label: "Спрашивать",
+    label: "Ручной",
     detail: "Подтверждать каждый вызов инструмента, включая чтение.",
+  },
+  {
+    value: "simple",
+    label: "Упрощённый",
+    detail: "Запомненные разрешения — сразу. Новые действия — с вашим подтверждением.",
   },
   {
     value: "auto",
     label: "Авто",
     detail:
-      "Чтение — сразу. Изменения и неизвестные действия — с подтверждением.",
+      "Запомненные разрешения — сразу. Остальное проверяет отдельная модель. Её решения не запоминаются.",
   },
   {
     value: "bypass",
-    label: "Bypass",
+    label: "Ебашим на все бабки",
     detail:
-      "Выполнять доступные инструменты без подтверждений, включая изменения.",
+      "Все доступные действия сразу: без подтверждений, проверки моделью и правил разрешений проекта.",
   },
+  { value: "plan", label: "План", detail: "Исследование без правок. Выполнение после утверждения плана." },
 ];
 export function PermissionMenu({
   value,
@@ -51,11 +56,13 @@ export function PermissionMenu({
         value={value}
         onValueChange={(value) => onChange(value as PermissionMode)}
       >
-        {modes.map((mode) => (
+        {modes.filter((mode) => mode.value !== "plan").map((mode) => (
           <MenuChoice key={mode.value} value={mode.value} detail={mode.detail}>
             {mode.label}
           </MenuChoice>
         ))}
+        <Menu.Separator className="dropdown-separator" />
+        <MenuChoice value="plan" detail={modes.at(-1)!.detail}>План</MenuChoice>
       </Menu.RadioGroup>
       <Menu.Separator className="dropdown-separator" />
       <div className="dropdown-note">

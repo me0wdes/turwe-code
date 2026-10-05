@@ -34,6 +34,7 @@ async function fixture(t) {
   const store = createStore(path.join(dir, "data"));
   store.state.projects.push({ id: "p", name: "Fixture", path: project });
   const session = store.createSession("p");
+  session.permissionMode = "plan";
   const mcp = { tools: () => [], list: () => [] };
   const coding = createCodingRuntime({
     store,
@@ -110,7 +111,7 @@ test("automatic overview honors read permissions, uses the active worktree and t
   assert.doesNotMatch(coding.prompt(session), /fixture-server/);
   session.permissionMode = "ask";
   assert.doesNotMatch(coding.prompt(session), /Project overview marker/);
-  session.permissionMode = "auto";
+  session.permissionMode = "plan";
   session.allowedTools = ["Grep"];
   assert.doesNotMatch(coding.prompt(session), /Project overview marker/);
   delete session.allowedTools;
@@ -125,6 +126,17 @@ test("automatic overview honors read permissions, uses the active worktree and t
   assert.doesNotMatch(context, /Project overview marker/);
   session.worktreePath = path.join(dir, "missing");
   assert.match(coding.prompt(session), /недоступн/);
+});
+
+test("auto and simplified modes do not preload unapproved files; explicit context rules still work", async (t) => {
+  const { store, session, coding } = await fixture(t);
+  for (const mode of ["auto", "simple"]) {
+    session.permissionMode = mode;
+    assert.doesNotMatch(coding.prompt(session), /Project overview marker|fixture-server|Verify changes/);
+  }
+  store.state.projects[0].permissionRules = [{ tool: "FileRead", pattern: "README.md", action: "allow" }];
+  assert.match(coding.prompt(session), /Project overview marker/);
+  assert.doesNotMatch(coding.prompt(session), /fixture-server|Verify changes/);
 });
 
 test("overview is bounded and does not load instructions through an external directory link", async (t) => {
@@ -318,7 +330,7 @@ test("WebSearch propagates MCP tool errors rather than treating them as search e
 
 test("matching ask rule takes precedence over an allow rule regardless of ordering", async (t) => {
   const { session, coding, store } = await fixture(t);
-  session.permissionMode = "bypass";
+  session.permissionMode = "auto";
   const definition = coding
     .definitions(session)
     .find((tool) => tool.function.name === "Bash");

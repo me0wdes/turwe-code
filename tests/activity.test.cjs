@@ -49,6 +49,9 @@ test("interrupted text, retry and legacy saved answers retain their content", ()
 test("activity only claims success after the real call completed", () => {
   assert.equal(toolActivity(first).label, "Прочитан файл");
   assert.equal(toolActivity(second).label, "Читает файл");
+  const reviewing = toolActivity({ ...second, review: { status: "checking", model: "haiku-fixture" } });
+  assert.equal(reviewing.label, "Проверка безопасности");
+  assert.equal(reviewing.status, "haiku-fixture");
   for (const status of ["queued", "approval", "error", "denied", "stopped"]) {
     const activity = toolActivity({ ...first, status });
     assert.equal(activity.label, "Чтение файла");

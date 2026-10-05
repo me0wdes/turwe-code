@@ -16,6 +16,7 @@ const {
   ElicitRequestSchema,
 } = require("@modelcontextprotocol/sdk/types.js");
 const { createOAuthProvider, McpSafeError } = require("./mcp-oauth.cjs");
+const { connectionFailure } = require("./mcp-errors.cjs");
 const {
   createBoundedFetch,
   validateHttpUrl,
@@ -272,6 +273,7 @@ function createMcpManager({
       toolCount:
         runtime?.status === "connected" ? runtime.definitions.length : 0,
       error: runtime?.error || storageError || "",
+      ...(runtime?.diagnostic ? { diagnostic: runtime.diagnostic } : {}),
     };
   }
   function list() {
@@ -292,24 +294,7 @@ function createMcpManager({
     atomicWrite(configFile, { version: 1, connectors: [...configs.values()] });
   }
   function errorMessage(error, config) {
-    if (error instanceof McpSafeError) return error.message;
-    if (error?.name === "AbortError" || error?.code === "ABORT_ERR")
-      return "MCP operation cancelled.";
-    if (error?.code === "ENOENT")
-      return "Unable to start the MCP command. Check that it is installed and the command path is correct.";
-    if (error?.code === -32001 || error?.name === "TimeoutError")
-      return "MCP server timed out. Check that it is running, then reconnect.";
-    if (config?.url && new URL(config.url).hostname === "mcp.figma.com")
-      return "Figma remote connection failed. Figma may require an approved MCP client; try the Figma desktop connector or check account access.";
-    if (
-      error instanceof UnauthorizedError ||
-      error?.code === 401 ||
-      error?.code === 403
-    )
-      return "MCP authentication failed. Check access and use Connect to sign in again.";
-    return config?.type === "stdio"
-      ? "MCP connection or tool failed. Check the command, arguments, and required environment variables."
-      : "MCP connection or tool failed. Check the server URL, network, and authentication.";
+    return connectionFailure(error, config).message;
   }
   async function dispose(runtime) {
     runtime.controller.abort();
@@ -476,6 +461,7 @@ function createMcpManager({
           },
           mcp: {
             connectorId: config.id,
+            permissionIdentity: hash(JSON.stringify(config), 64),
             connectorName: config.name,
             toolName: tool.name,
             readOnly:
@@ -593,6 +579,7 @@ function createMcpManager({
                 authProvider: runtime.oauth,
                 fetch: createBoundedFetch({
                   signal: runtime.controller.signal,
+                  oauthMetadata: () => runtime.oauth?.discoveryState()?.authorizationServerMetadata,
                   ...(fetchImpl ? { fetch: fetchImpl } : {}),
                 }),
                 requestInit: value.bearerToken
@@ -685,12 +672,14 @@ function createMcpManager({
         changed();
       } catch (error) {
         const cancelled = runtime.controller.signal.aborted;
+        const failure = connectionFailure(error, config);
         await dispose(runtime);
         if (runtimes.get(id) === runtime) {
           runtime.status = cancelled ? "disconnected" : "error";
           runtime.error = cancelled
             ? "MCP connection cancelled."
-            : errorMessage(error, config);
+            : failure.message;
+          runtime.diagnostic = cancelled ? undefined : failure.diagnostic;
           changed();
         }
       } finally {

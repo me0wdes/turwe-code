@@ -1,5 +1,5 @@
 export function requireProject(state, projectId) {
-  if (!projectId) throw new Error("Выберите папку проекта, чтобы начать чат");
+  if (!projectId) throw new Error("Укажите существующий проект или начните чат без проекта");
   const project = state.projects.find((item) => item.id === projectId);
   if (!project)
     throw new Error("Проект не найден. Выберите папку проекта заново");

@@ -1,4 +1,5 @@
 const { McpSafeError } = require('./mcp-oauth.cjs');
+const { parseErrorResponse } = require('@modelcontextprotocol/sdk/client/auth.js');
 const MAX_PROTOCOL_BYTES = 8 * 1024 * 1024;
 
 function validateHttpUrl(value, { query = true } = {}) {
@@ -13,17 +14,39 @@ function validateHttpUrl(value, { query = true } = {}) {
 
 // Enforce limits before SDK JSON/SSE parsing. SSE streams may stay open, but
 // each event has the same bound as an ordinary JSON protocol response.
-function createBoundedFetch({ signal, fetch: fetchImpl = globalThis.fetch }) {
+function createBoundedFetch({ signal, fetch: fetchImpl = globalThis.fetch, oauthMetadata = () => undefined }) {
   return async (input, init = {}) => {
     const url = validateHttpUrl(input instanceof Request ? input.url : input);
+    const metadata = oauthMetadata();
+    const phase = init.method?.toUpperCase() === 'POST'
+      ? url.href === metadata?.registration_endpoint ? 'registration'
+        : url.href === metadata?.token_endpoint ? 'token' : undefined
+      : undefined;
+    const checkOAuth = async response => {
+      if (phase && response.status >= 400) {
+        // Preserve SDK error classes so invalid_client/invalid_grant recovery
+        // still works, but retain the HTTP facts before the SDK discards them.
+        const body = await response.text();
+        const error = await parseErrorResponse(body);
+        // A malformed/non-JSON response makes the SDK synthesize server_error.
+        // Do not report that synthetic value as an error returned by the service.
+        let oauthCode = null;
+        try { oauthCode = JSON.parse(body).error ?? null; } catch { /* HTTP facts suffice. */ }
+        error.mcpOAuthCode = oauthCode;
+        error.mcpPhase = phase;
+        error.httpStatus = response.status;
+        throw error;
+      }
+      return response;
+    };
     const timeout = new AbortController();
     const requestSignal = AbortSignal.any([timeout.signal, ...(signal ? [signal] : []), ...(init.signal ? [init.signal] : [])]);
     let timer = setTimeout(() => timeout.abort(), 30_000);
     timer.unref();
     let response;
     try { response = await fetchImpl(url.href, { ...init, redirect: 'manual', signal: requestSignal }); }
-    catch (error) { clearTimeout(timer); throw error; }
-    if (!response.body) { clearTimeout(timer); return response; }
+    catch (error) { clearTimeout(timer); if (phase && error instanceof Error) error.mcpPhase = phase; throw error; }
+    if (!response.body) { clearTimeout(timer); return checkOAuth(response); }
     const isSse = response.headers.get('content-type')?.split(';')[0].trim().toLowerCase() === 'text/event-stream';
     if (isSse) { clearTimeout(timer); timer = undefined; }
     const length = Number(response.headers.get('content-length'));
@@ -64,7 +87,7 @@ function createBoundedFetch({ signal, fetch: fetchImpl = globalThis.fetch }) {
       },
       async cancel(reason) { clearTimeout(timer); await reader.cancel(reason); },
     });
-    return new Response(limited, { status: response.status, statusText: response.statusText, headers: response.headers });
+    return checkOAuth(new Response(limited, { status: response.status, statusText: response.statusText, headers: response.headers }));
   };
 }
 

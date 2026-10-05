@@ -1,5 +1,6 @@
 const { minimatch } = require("minimatch");
 const { needsApproval } = require("./interaction.cjs");
+const { hasApproval } = require("./action-approvals.cjs");
 function matchesTool(name, args, pattern, definitionOnly = false) {
   const parts = String(pattern).match(/^([^()]+)(?:\((.*)\))?$/);
   if (!parts) return false;
@@ -44,12 +45,17 @@ function validateRules(rules) {
     return { tool: r.tool, pattern: r.pattern || "*", action: r.action };
   });
 }
-function decision(session, definition, args, project) {
+function decision(session, definition, args, project, state) {
   const name = definition.function.name;
   if (!toolAllowed(session, name, args))
     return {
       action: "deny",
       reason: "Инструмент не входит в профиль этого агента или скилла.",
+    };
+  if (session.permissionMode === "bypass")
+    return {
+      action: "allow",
+      reason: "Проверки разрешений отключены пользователем.",
     };
   if (
     session.permissionMode === "plan" &&
@@ -70,6 +76,33 @@ function decision(session, definition, args, project) {
       ? normalize(args.path)
       : String(args?.command ?? args?.url ?? args?.operation ?? "*"),
   ];
+  const pathAliases = [];
+  // Check both user spelling and canonical project-relative spelling. An absolute
+  // path (or a symlink) must not turn a denied project file into an allowed read.
+  if (
+    typeof args?.path === "string" &&
+    project?.path &&
+    ["FileRead", "Glob", "Grep"].includes(name)
+  ) {
+    const path = require("node:path"),
+      fs = require("node:fs");
+    const base = session.worktreePath || project.path;
+    const expanded = /^~[\\/]/.test(args.path)
+      ? path.join(require("node:os").homedir(), args.path.slice(2))
+      : args.path;
+    const target = path.resolve(base, expanded);
+    const real = (value) => {
+      try {
+        return fs.realpathSync(value);
+      } catch {
+        return value;
+      }
+    };
+    pathAliases.push(
+      normalize(target),
+      normalize(path.relative(real(base), real(target))),
+    );
+  }
   if (name === "apply_patch")
     targets = require("diff")
       .parsePatch(args.patch || "")
@@ -83,7 +116,7 @@ function decision(session, definition, args, project) {
   const rules = (project?.permissionRules || []).filter(
     (r) =>
       minimatch(name, r.tool, { nocase: true }) &&
-      targets.some((target) =>
+      [...targets, ...pathAliases].some((target) =>
         minimatch(target, r.pattern, {
           dot: true,
           nocase: process.platform === "win32",
@@ -96,26 +129,49 @@ function decision(session, definition, args, project) {
       action: "deny",
       reason: `Запрещено правилом ${deny.tool}: ${deny.pattern}`,
     };
+  if (session.permissionMode === "ask")
+    return {
+      action: "ask",
+      reason:
+        "Ручной режим: подтвердите каждый вызов, включая чтение и ранее разрешённые действия.",
+    };
   const selected = rules.find((r) => r.action === "ask") || rules.at(-1);
   if (
     selected &&
     (selected.action !== "allow" ||
       targets.every((target) =>
-        minimatch(target, selected.pattern, {
-          dot: true,
-          nocase: process.platform === "win32",
-        }),
+        [target, ...pathAliases].some((alias) =>
+          minimatch(alias, selected.pattern, {
+            dot: true,
+            nocase: process.platform === "win32",
+          }),
+        ),
       ))
   )
     return {
       action: selected.action,
       reason: `Правило проекта: ${selected.tool} / ${selected.pattern}`,
     };
+  if (
+    ["simple", "auto"].includes(session.permissionMode) &&
+    hasApproval(session, definition, args, project, state)
+  )
+    return {
+      action: "allow",
+      reason:
+        "Действует сохранённое разрешение пользователя на действие или инструмент.",
+    };
   return {
-    action: needsApproval(session.permissionMode, definition) ? "ask" : "allow",
-    reason: definition.readOnly
-      ? "Чтение данных"
-      : "Инструмент может изменить файлы, запустить процесс или обратиться к внешнему сервису.",
+    action:
+      session.permissionMode === "auto"
+        ? "review"
+        : needsApproval(session.permissionMode, definition)
+          ? "ask"
+          : "allow",
+    reason:
+      session.permissionMode === "simple"
+        ? "Это действие ещё не разрешено. Проверьте параметры перед запуском."
+        : "Действие требует проверки безопасности.",
   };
 }
 module.exports = { decision, validateRules, toolAllowed };

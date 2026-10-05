@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { Copy, Square, X } from "../icons";
 import { bridge,unwrap } from '../bridge';
-import type { AgentRun, QuestionResponse } from "../types";
+import type { ApprovalChoice, AgentRun, QuestionResponse } from "../types";
 import { agentAction, agentStatus, hasActiveReply } from "../agents";
 import { fluid } from "../motion";
 import { IconButton } from "./Primitives";
@@ -27,7 +27,7 @@ export function AgentPanel({
   onClose: () => void;
   onOpen: (id: string) => void;
   onStop: () => Promise<void>;
-  onApprove: (callId: string, allowed: boolean) => void;
+  onApprove: (callId: string, allowed: boolean, remember?: ApprovalChoice) => void;
   onAnswer: (callId: string, response: QuestionResponse) => Promise<void>;
   onCopy: (text: string) => void;
   onError: (message: string) => void;

@@ -95,7 +95,7 @@ test("answer followed immediately by stop preserves the real answer without anot
 });
 
 test("permission modes distinguish reads, mutations, unknown tools and interactive input", () => {
-  for (const mode of ["ask", "auto", "bypass"])
+  for (const mode of ["ask", "simple", "auto", "bypass"])
     assert.equal(needsApproval(mode, questionDef), false);
   assert.equal(needsApproval("ask", { readOnly: true }), true);
   assert.equal(needsApproval("auto", { readOnly: true }), false);
@@ -105,7 +105,8 @@ test("permission modes distinguish reads, mutations, unknown tools and interacti
     { requiresApproval: true, readOnly: true },
     { mcp: { readOnly: false } },
   ]) {
-    assert.equal(needsApproval("auto", tool), true);
+    assert.equal(needsApproval("auto", tool), false);
+    assert.equal(needsApproval("simple", tool), true);
     assert.equal(needsApproval("bypass", tool), false);
   }
   assert.equal(needsApproval("invalid", {}), true);
@@ -227,6 +228,7 @@ test("switching to bypass releases a pending tool but never a pending question",
     },
   });
   const s = store.createSession();
+  s.permissionMode = "ask";
   const job = controller.send(s.id, "Do it");
   await tick();
   assert.equal(s.messages.at(-1).status, "approval");

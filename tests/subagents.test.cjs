@@ -72,6 +72,7 @@ test("restart and retry retain a completed child mutation while another child wa
   const resumed = createController({
     store: recovered,
     getConfig: () => ({ key: "test", baseUrl: "https://example.test/v1" }),
+    reviewAction: async () => ({ decision: "allow", reason: "Fixture action" }),
     emit: () => {},
     stream: async ({ messages, onDelta }) => {
       sentHistory = JSON.stringify(messages);
@@ -109,6 +110,7 @@ function fixture(t, stream, options = {}) {
     emit: () => {},
     stream,
     getTools: () => [],
+    reviewAction: async () => ({ decision: "allow", reason: "Fixture action" }),
     systemPrompt: (session) => (session.rootSessionId ? "CHILD" : "ROOT"),
     ...options,
   });
@@ -297,9 +299,11 @@ test("sibling approvals with the same provider call ID are isolated and inherit 
       },
     },
   );
-  const root = store.createSession(),
-    other = store.createSession(),
-    job = controller.send(root.id, "root");
+  store.state.projects.push({ id: "approvals", path: os.tmpdir(), permissionRules: [{ tool: "delegate_tasks", pattern: "*", action: "allow" }] });
+  const root = store.createSession("approvals"),
+    other = store.createSession();
+  root.permissionMode = "simple";
+  const job = controller.send(root.id, "root");
   for (let i = 0; i < 12; i++) await tick();
   const children = root.messages.at(-1).agents;
   assert.equal(children?.length, 2);

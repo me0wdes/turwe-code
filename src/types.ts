@@ -21,6 +21,7 @@ export interface Attachment {
   note?: string;
   preview?: string;
 }
+export type ApprovalChoice = boolean | "project" | "global";
 export interface ToolCall {
   id: string;
   name: string;
@@ -40,6 +41,12 @@ export interface ToolCall {
   result?: string;
   attachments?: Attachment[];
   approvalReason?: string;
+  approvalScope?: { projectName?: string; manual: boolean };
+  review?: {
+    status: "checking" | "allowed" | "denied" | "error";
+    model: string;
+    reason?: string;
+  };
   questions?: AgentQuestion[];
   response?: QuestionResponse;
   agentIds?: string[];
@@ -68,7 +75,7 @@ export interface ChatSetup {
   error?: string;
   alternative?: "figma-desktop";
 }
-export type PermissionMode = "ask" | "auto" | "bypass" | "plan";
+export type PermissionMode = "ask" | "simple" | "auto" | "bypass" | "plan";
 export type Effort = "auto" | "low" | "medium" | "high";
 export interface AgentQuestion {
   id: string;
@@ -109,6 +116,7 @@ export interface Message {
   }[];
 }
 export interface Session {
+  approvedActions?: string[];
   previewUrl?: string;
   browser?: BrowserState;
   effort?: Effort;
@@ -140,6 +148,8 @@ export interface AgentRun extends Session {
   finishedAt?: string;
 }
 export interface Project {
+  approvedActions?: string[];
+  approvedTools?: string[];
   memory?: string;
   permissionRules?: {
     tool: string;
@@ -159,6 +169,7 @@ export interface ModelOption {
 export interface ModelLibrary {
   models: ModelOption[];
   defaultModel: string;
+  approvalModel?: string;
 }
 export interface Skill {
   id: string;
@@ -175,6 +186,7 @@ export interface Skill {
   references: { path: string; content: string }[];
 }
 export interface Settings {
+  approvalModel?: string;
   effort?: Effort;
   lspServers?: {
     id: string;
@@ -217,6 +229,7 @@ export interface McpFormData {
   schema: { properties: Record<string, McpField>; required?: string[] };
 }
 export interface AppState {
+  approvedTools?: string[];
   update?: AppUpdate;
   agentProfiles?: {
     id: string;
@@ -262,6 +275,12 @@ export interface Connector {
   status: "disconnected" | "connecting" | "authorizing" | "connected" | "error";
   toolCount: number;
   error?: string;
+  diagnostic?: {
+    code: string;
+    phase: "connection" | "registration" | "token" | "oauth";
+    httpStatus?: number;
+    oauthError?: string;
+  };
   hasSecret: boolean;
 }
 export type ConnectorInput = Partial<
@@ -369,6 +388,7 @@ export interface DesktopBridge {
     callId: string,
     allowed: boolean,
     agentId?: string,
+    remember?: ApprovalChoice,
   ): Promise<Result<null>>;
   answerQuestion(
     id: string,

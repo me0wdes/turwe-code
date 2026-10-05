@@ -101,7 +101,15 @@ async function createOAuthProvider({ read, write, openExternal, onAuthorize = ()
   if (signal?.aborted) cancel();
   return {
     redirectUrl,
-    get clientMetadata() { return { client_name: 'Turwe Code', redirect_uris: [redirectUrl], grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'], token_endpoint_auth_method: 'none' }; },
+    get clientMetadata() {
+      const metadata = read().discovery?.authorizationServerMetadata;
+      // DCR must request a method advertised by the server. Figma, for example,
+      // issues per-installation client secrets and does not advertise 'none'.
+      const methods = metadata?.token_endpoint_auth_methods_supported ?? (metadata ? ['client_secret_basic'] : ['none']);
+      const method = ['none', 'client_secret_basic', 'client_secret_post'].find(value => methods.includes(value));
+      if (!method) throw new McpSafeError('Сервер OAuth не поддерживает доступные приложению способы входа.', 'MCP_AUTH_METHOD');
+      return { client_name: 'Turwe Code', redirect_uris: [redirectUrl], grant_types: ['authorization_code', 'refresh_token'], response_types: ['code'], token_endpoint_auth_method: method };
+    },
     state: () => state,
     clientInformation: () => read().clientInformation,
     saveClientInformation: (value) => write({ ...read(), clientInformation: value }),

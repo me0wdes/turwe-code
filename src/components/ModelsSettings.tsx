@@ -3,7 +3,8 @@ import { AnimatePresence, motion } from "motion/react";
 import { Check, LoaderCircle, Plus, Search, Trash2 } from "../icons";
 import type { AppState, ModelOption, Result } from "../types";
 import { bridge, unwrap } from "../bridge";
-import { ModelMenu } from "./Dropdown";
+import { Dropdown, Menu, MenuChoice, ModelMenu } from "./Dropdown";
+import { approvalModel } from "../models";
 import { IconButton } from "./Primitives";
 import { fluid } from "../motion";
 
@@ -27,6 +28,7 @@ export function ModelsSettings({
     [notice, setNotice] = useState("");
   const request = useRef(0);
   const endpoint = state.settings.baseUrl;
+  const reviewer = approvalModel(state.models, state.settings.approvalModel);
   useEffect(
     () => () => {
       request.current++;
@@ -130,6 +132,23 @@ export function ModelsSettings({
             сервере.
           </p>
         )}
+      </div>
+      <div className="model-default-field">
+        <span>Модель проверки действий</span>
+        <Dropdown label="Модель проверки действий" className="wide-trigger" disabled={busy}
+          trigger={<span className="dropdown-value">{state.settings.approvalModel
+            ? state.models.find((model) => model.id === reviewer)?.name || state.settings.approvalModel
+            : "Автоматически"}</span>}>
+          <Menu.RadioGroup value={state.settings.approvalModel || ""}
+            onValueChange={(id) => void change(bridge.saveSettings({ approvalModel: id }), "Модель проверки изменена")}>
+            <MenuChoice value="" detail="Haiku из вашего списка, затем Sonnet">Автоматически</MenuChoice>
+            {state.models.map((model) => <MenuChoice key={model.id} value={model.id} detail={model.id}>{model.name}</MenuChoice>)}
+          </Menu.RadioGroup>
+        </Dropdown>
+        <p className="field-hint">
+          В режиме «Авто» проверяет новые действия через текущее подключение API. Каждое решение действует один раз.
+          {reviewer ? ` Сейчас: ${reviewer}.` : " Добавьте Haiku или Sonnet либо выберите другую модель из списка."}
+        </p>
       </div>
       <div className="model-actions">
         <button

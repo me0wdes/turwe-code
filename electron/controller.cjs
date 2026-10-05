@@ -1,5 +1,9 @@
 const { randomUUID } = require("node:crypto");
 const { streamChat, safeError } = require("./api.cjs");
+const { reviewAction: defaultReviewAction } = require("./action-review.cjs");
+const { approvalModel } = require("./model-library.mjs");
+const { decision } = require("./workspace-policy.cjs");
+const { actionKey, rememberApproval, rememberToolApproval } = require("./action-approvals.cjs");
 const { resolveSkills } = require("./skills.cjs");
 const { isActionPreamble, ACTION_CONTINUATION } = require("./response-completion.cjs");
 const {
@@ -11,7 +15,6 @@ const {
   delegationOutput,
 } = require("./agents.cjs");
 const {
-  needsApproval,
   validateQuestions,
   validateAnswers,
 } = require("./interaction.cjs");
@@ -27,10 +30,13 @@ function createController({
   describeTool,
   systemPrompt,
   coding,
+  reviewAction = defaultReviewAction,
 }) {
   const running = new Map(),
     approvals = new Map(),
     questions = new Map();
+  const reviews = new Map();
+  const recheckPermissions = Symbol("recheck permissions");
   const agentRequests = createRequestGate();
   const sessionFor = (id) => {
     const session =
@@ -332,6 +338,103 @@ function createController({
         reject(error);
       }
     });
+  }
+  function refreshApprovals(rootSessionId) {
+    for (const pending of approvals.values())
+      if (pending.rootSessionId === rootSessionId) pending.resolve(recheckPermissions);
+    for (const pending of reviews.values())
+      if (pending.rootSessionId === rootSessionId) pending.abort.abort(recheckPermissions);
+  }
+  async function authorizeCall(session, reply, call, definition, args, signal) {
+    const root = sessionFor(session.rootSessionId || session.id);
+    const projectForAction = () => store.state.projects.find((p) => p.id === session.projectId);
+    const policy = () => coding?.policy({ ...session, permissionMode: permissionMode(session) }, definition, args) ||
+      decision({ ...session, permissionMode: permissionMode(session) }, definition, args, projectForAction(), store.state);
+    const deny = (reason) => {
+      call.status = "denied";
+      call.result = `${reason}\nДействие не выполнено. Не обходи отказ другим инструментом или повторным вызовом без нового запроса пользователя.`;
+      return false;
+    };
+    for (;;) {
+      signal.throwIfAborted();
+      if (pendingSteering(root)) {
+        call.status = "stopped";
+        call.result = "Действие не выполнено: пользователь скорректировал задачу.";
+        return false;
+      }
+      const mode = permissionMode(session);
+      const project = projectForAction();
+      const scope = actionKey(session, definition, args, project);
+      const rule = policy();
+      if (rule.action === "deny") return deny(rule.reason);
+      if (rule.action === "allow") return { mode, scope };
+      if (rule.action === "ask") {
+        delete call.review;
+        call.status = "approval";
+        reply.status = "approval";
+        call.approvalReason = rule.reason;
+        call.approvalScope = { projectName: project?.name, manual: mode === "ask" };
+        const answer = await waitForInput(approvals, `${session.id}:${call.id}`, signal,
+          { rootSessionId: root.id, projectId: project?.id }, () => { store.save(); emit(); });
+        signal.throwIfAborted();
+        if (answer === recheckPermissions) continue;
+        if (!answer.allowed) return deny("Пользователь отклонил вызов.");
+        if (mode !== permissionMode(session) || scope !== actionKey(session, definition, args, projectForAction())) continue;
+        const current = policy();
+        if (current.action === "deny") return deny(current.reason);
+        if (typeof answer.remember === "string") {
+          rememberToolApproval(definition, project, store.state, answer.remember);
+          // The approval menu explicitly tells manual-mode users about this
+          // switch. Returning to manual later still asks for every tool call.
+          if (mode === "ask") root.permissionMode = "simple";
+          store.save();
+          for (const affected of store.state.sessions)
+            if (answer.remember === "global" || affected.projectId === project?.id)
+              refreshApprovals(affected.id);
+          emit();
+        } else if (answer.remember) {
+          rememberApproval(session, definition, args, project);
+          store.save();
+        }
+        return { mode: permissionMode(session), scope };
+      }
+      if (rule.action !== "review") return deny("Неизвестное решение проверки разрешений.");
+      const config = getConfig();
+      const selectedModel = () => approvalModel(store.models?.list() || [], store.state.settings.approvalModel);
+      const model = selectedModel();
+      const reviewAbort = new AbortController();
+      const key = `${session.id}:${call.id}`;
+      reviews.set(key, { rootSessionId: root.id, abort: reviewAbort });
+      call.status = "running";
+      reply.status = "working";
+      call.review = { status: "checking", model };
+      try {
+        store.save();
+        emit();
+        const verdict = await reviewAction({ config, model, root, session, project, definition, args,
+          signal: AbortSignal.any([signal, reviewAbort.signal]) });
+        signal.throwIfAborted();
+        if (reviewAbort.signal.aborted || mode !== permissionMode(session) ||
+            scope !== actionKey(session, definition, args, projectForAction()) ||
+            model !== selectedModel() || config.baseUrl !== getConfig().baseUrl) continue;
+        if (!["allow", "deny"].includes(verdict?.decision) || typeof verdict.reason !== "string")
+          throw new Error("Проверяющая модель не вернула решение. Действие не выполнено.");
+        call.review = { status: verdict.decision === "allow" ? "allowed" : "denied", model,
+          reason: safeError(verdict.reason, config.key) };
+        if (verdict.decision === "deny") return deny(`Проверка безопасности отклонила действие: ${call.review.reason}`);
+        const current = policy();
+        if (current.action === "deny") return deny(current.reason);
+        if (current.action === "ask") continue;
+        return { mode, scope };
+      } catch (error) {
+        if (reviewAbort.signal.reason === recheckPermissions && !signal.aborted) continue;
+        call.review = { status: "error", model, reason: safeError(error, config.key) };
+        throw error;
+      } finally {
+        reviews.delete(key);
+        if (call.review?.status === "checking") delete call.review;
+      }
+    }
   }
   function run(session, resuming, agentContext) {
     const config = agentContext?.config || getConfig();
@@ -668,51 +771,12 @@ function createController({
                 abort.signal.throwIfAborted();
                 continue;
               }
-              const rule = coding?.policy(
-                { ...session, permissionMode: permissionMode(session) },
-                definition,
-                args,
-              );
-              if (rule?.action === "deny") {
-                call.status = "denied";
-                call.result = rule.reason;
-                continue;
-              }
-              if (
-                rule
-                  ? rule.action === "ask"
-                  : needsApproval(permissionMode(session), definition)
-              ) {
-                call.status = "approval";
-                reply.status = "approval";
-                call.approvalReason =
-                  definition.readOnly === true ||
-                  definition.mcp?.readOnly === true
-                    ? "В режиме «Спрашивать» чтение данных тоже требует вашего разрешения."
-                    : "Инструмент может изменить данные или выполнить действие. Проверьте параметры перед запуском.";
-                if (
-                  !(await waitForInput(
-                    approvals,
-                    `${session.id}:${call.id}`,
-                    abort.signal,
-                    {
-                      definition,
-                      rootSessionId: session.rootSessionId || session.id,
-                    },
-                    () => {
-                      store.save();
-                      emit();
-                    },
-                  ))
-                ) {
-                  call.status = "denied";
-                  call.result =
-                    "Пользователь отклонил вызов. Не выполняй его повторно без нового запроса.";
-                  store.save();
-                  emit();
-                  continue;
-                }
-              }
+              let permission;
+              do {
+                permission = await authorizeCall(session, reply, call, definition, args, abort.signal);
+              } while (permission && (permission.mode !== permissionMode(session) ||
+                permission.scope !== actionKey(session, definition, args, store.state.projects.find((p) => p.id === session.projectId))));
+              if (!permission) continue;
               call.status = "running";
               reply.status = "working";
               store.save();
@@ -726,6 +790,7 @@ function createController({
                 ).action === "deny"
               )
                 throw new Error("Доступ к действию изменился. Вызов отменён.");
+              session.permissionMode = permissionMode(session);
               let output =
                 definition.interaction === "delegate"
                   ? await delegate(args, call)
@@ -1234,12 +1299,14 @@ function createController({
       }
     },
     isRunning: (id) => running.has(id),
-    approve: (id, callId, allowed, agentId) => {
+    approve: (id, callId, allowed, agentId, remember = false) => {
       const target = inputSession(id, agentId);
       const pending = approvals.get(`${target.id}:${callId}`);
-      if (!pending || typeof allowed !== "boolean")
+      if (!pending || typeof allowed !== "boolean" || ![false, true, "project", "global"].includes(remember))
         throw new Error("Подтверждение уже не ожидается");
-      pending.resolve(allowed);
+      if (allowed && remember === "project" && !pending.projectId)
+        throw new Error("Для разрешения на проект сначала выберите проект.");
+      pending.resolve({ allowed, remember: allowed && remember });
     },
     answer: (id, callId, response, agentId) => {
       const target = inputSession(id, agentId);
@@ -1247,15 +1314,7 @@ function createController({
       if (!pending) throw new Error("Ответ на этот вопрос уже не ожидается");
       pending.resolve(validateAnswers(pending.questions, response));
     },
-    permissionsChanged: (id) => {
-      const session = sessionFor(id);
-      for (const [key, pending] of approvals)
-        if (
-          pending.rootSessionId === id &&
-          !needsApproval(session.permissionMode, pending.definition)
-        )
-          pending.resolve(true);
-    },
+    permissionsChanged: refreshApprovals,
     stopAll: () => {
       for (const job of running.values()) job.abort.abort();
     },

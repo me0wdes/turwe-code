@@ -126,6 +126,41 @@ test("unknown presets, ambiguous targets, unsafe URLs and cancelled calls never 
   assert.equal(f.counts().saves, 0);
 });
 
+test("Figma endpoint, not its user-supplied name, determines authentication and setup guidance", async () => {
+  const f = fixture();
+  const desktop = f.setup.describe("connect_connector", { url: "http://localhost:3845/mcp/" }, f.context.session);
+  assert.equal(desktop.auth, "none");
+  assert.equal(desktop.title, "Figma Desktop");
+  assert.match(desktop.description, /Enable desktop MCP server/);
+  assert.match(desktop.helpUrl, /local-server-installation/);
+  assert.equal(desktop.alternative, undefined);
+  const remote = f.setup.describe("connect_connector", { url: "https://mcp.figma.com/mcp/", name: "Figma Desktop" }, f.context.session);
+  assert.equal(remote.auth, "oauth");
+  assert.equal(remote.alternative, "figma-desktop");
+  assert.match(remote.helpUrl, /remote-server-installation/);
+  await f.setup.execute("connect_connector", { url: "http://127.0.0.1:3845/mcp" }, f.context);
+  assert.equal(f.items[0].auth, "none");
+});
+
+test("connection failure sends the same safe diagnostic to the card and agent without starting a fallback", async () => {
+  const f = fixture(), progress = [];
+  const diagnostic = { code: "MCP_REGISTRATION_REJECTED", phase: "registration", httpStatus: 403 };
+  f.mcp.connect = async id => {
+    Object.assign(f.items.find(c => c.id === id), { status: "error", error: "Регистрация отклонена (HTTP 403)", diagnostic });
+    f.observers.forEach(observer => observer(f.items));
+    return f.items.find(c => c.id === id);
+  };
+  const result = await f.setup.execute("connect_connector", { preset: "figma" }, { ...f.context, onProgress: p => progress.push(p) });
+  assert.equal(result.isError, true);
+  assert.equal(progress.at(-1).error, result.setup.error);
+  assert.match(result.text, /"phase":"registration"/);
+  assert.match(result.text, /дождись выбора пользователя/);
+  assert.equal(f.items.length, 1);
+  assert.equal(f.items[0].url, "https://mcp.figma.com/mcp");
+  const listed = JSON.parse((await f.setup.execute("list_connectors", {}, f.context)).text);
+  assert.deepEqual(listed.saved[0].diagnostic, diagnostic);
+});
+
 test("connector discovery hides secrets and saved stdio arguments", async () => {
   const f = fixture();
   f.items.push({
@@ -224,6 +259,7 @@ function controllerFixture(t, stream) {
   const controller = createController({
     store,
     getConfig: () => ({ key: "fixture-only" }),
+    reviewAction: async () => ({ decision: "allow", reason: "Fixture read" }),
     emit() {},
     stream,
     ...createTools({
@@ -235,7 +271,7 @@ function controllerFixture(t, stream) {
     }),
   });
   const session = store.createSession();
-  session.permissionMode = "auto";
+  session.permissionMode = "ask";
   return { ...f, store, controller, session, didRead: () => didRead };
 }
 const connectResponse = {
@@ -308,6 +344,8 @@ test("chat approval waits for real sign-in then continues the same task with fre
   await until(() => latestCall(f.session)?.setup?.status === "authorizing");
   assert.equal(f.session.messages.at(-1).status, "question");
   assert.equal(requests, 1);
+  f.session.permissionMode = "auto";
+  f.controller.permissionsChanged(f.session.id);
   finishSignIn();
   await run.done;
   assert.equal(f.session.messages.at(-1).status, "complete");

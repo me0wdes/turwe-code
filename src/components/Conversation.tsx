@@ -8,7 +8,7 @@ import {
   Sparkles,
   Pencil,
 } from "../icons";
-import type { Session, QuestionResponse } from "../types";
+import type { ApprovalChoice, Session, QuestionResponse } from "../types";
 import { AssistantContent } from "./AssistantContent";
 import { IconButton } from "./Primitives";
 import { playSound } from "../sound";
@@ -24,7 +24,7 @@ interface Props {
   notify: (text: string) => void;
   onError: (text: string) => void;
   onBranch: (messageId: string, content?: string) => void;
-  onApprove: (callId: string, allowed: boolean) => void;
+  onApprove: (callId: string, allowed: boolean, remember?: ApprovalChoice) => void;
   onAnswer: (callId: string, response: QuestionResponse) => Promise<void>;
 }
 const positions = new Map<string, number>();

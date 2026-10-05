@@ -22,6 +22,7 @@ import { configureSound, unlockSound, playSound } from "./sound";
 import { Sidebar } from "./components/Sidebar";
 import { SidebarRail } from "./components/SidebarRail";
 import { ProjectPicker } from "./components/ProjectPicker";
+import { NewSessionScreen } from "./components/NewSessionScreen";
 import { UpdateNotice } from "./components/AppUpdates";
 import { Composer } from "./components/Composer";
 import { Conversation } from "./components/Conversation";
@@ -59,9 +60,7 @@ export default function App() {
       localStorage.getItem("turwe-active-session"),
     ),
     [sidebar, setSidebar] = useState(true),
-    [projectPicker, setProjectPicker] = useState<"new" | "current" | null>(
-      null,
-    ),
+    [projectPicker, setProjectPicker] = useState<"current" | null>(null),
     [startingSession, setStartingSession] = useState(false),
     [selectedAgentId, setSelectedAgentId] = useState<string | null>(null),
     [settings, setSettings] = useState(false),
@@ -92,7 +91,6 @@ export default function App() {
     revealTracker = useRef(createRevealTracker()),
     deleteTrigger = useRef<HTMLElement | null>(null),
     attachmentLock = useRef(false),
-    sessionStartLock = useRef(false),
     projectDialogLock = useRef(false),
     seen = useRef(new Map<string, string>()),
     loaded = useRef(false);
@@ -147,7 +145,7 @@ export default function App() {
         setActiveId((current) =>
           next.sessions.some((s) => s.id === current && !s.archived)
             ? current
-            : next.sessions.find((s) => !s.archived)?.id || null,
+            : null,
         );
         setModel(next.settings.model);
       })
@@ -228,7 +226,10 @@ export default function App() {
   const openingPanel = useRef(false);
   async function openPanel(tool: WorkspaceTool) {
     if (openingPanel.current) return;
-    if (!selectedProject) {
+    if (
+      !selectedProject &&
+      !["files", "preview", "terminal", "plan", "agents", "mcp"].includes(tool)
+    ) {
       setProjectPicker("current");
       return;
     }
@@ -392,45 +393,14 @@ export default function App() {
     setActiveId(id);
   }
   async function newSession(id?: string | null) {
-    if (attaching || sending || sessionStartLock.current) return;
-    const target = id === undefined ? selectedProject?.id : id;
-    if (!target) {
-      setProjectPicker("new");
-      return;
-    }
-    sessionStartLock.current = true;
-    setStartingSession(true);
-    try {
-      const created = await unwrap(bridge.createSession(target));
-      // A draft typed before choosing the first project belongs to that chat.
-      if (!session && (draft || attached.length)) {
-        await unwrap(
-          bridge.updateSession(created, {
-            draft,
-            model,
-            permissionMode,
-            effort: effort || state?.settings.effort || "auto",
-          }),
-        );
-        if (attached.length)
-          await unwrap(bridge.draftAttachments(created, attached));
-        setDrafts((old) => ({ ...old, new: "", [created]: draft }));
-        setAttachments((old) => ({ ...old, new: [], [created]: attached }));
-      }
-      const next = await unwrap(bridge.bootstrap());
-      applyState(next);
-      setProjectId(target);
-      setActiveId(created);
-      setPage("chat");
-      setProjectPicker(null);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      sessionStartLock.current = false;
-      setStartingSession(false);
-    }
+    if (attaching || sending) return;
+    setProjectId(id || null);
+    setActiveId(null);
+    setSelectedAgentId(null);
+    setPage("chat");
+    setProjectPicker(null);
   }
-  async function assignProject(id: string) {
+  async function assignProject(id: string | null) {
     if (session?.messages.length) {
       await newSession(id);
       return;
@@ -447,20 +417,13 @@ export default function App() {
     }
   }
   async function chooseProject() {
-    if (
-      sending ||
-      attaching ||
-      sessionStartLock.current ||
-      projectDialogLock.current
-    )
-      return;
+    if (sending || attaching || projectDialogLock.current) return;
     projectDialogLock.current = true;
     setStartingSession(true);
     try {
       const project = await unwrap(bridge.chooseProject());
       if (project) {
-        if (projectPicker === "new") await newSession(project.id);
-        else await assignProject(project.id);
+        await assignProject(project.id);
       }
     } catch (e) {
       setError((e as Error).message);
@@ -478,10 +441,6 @@ export default function App() {
       (!draft.trim() && !attached.length)
     )
       return;
-    if (!selectedProject) {
-      setProjectPicker("current");
-      return;
-    }
     if (!state.models.length) {
       openSettings("models");
       return;
@@ -805,14 +764,22 @@ export default function App() {
                         bridge.answerQuestion(session.id, callId, response),
                       );
                     }}
-                    onApprove={(callId, allowed) => {
+                    onApprove={(callId, allowed, remember) => {
                       void unwrap(
-                        bridge.approveTool(session.id, callId, allowed),
+                        bridge.approveTool(
+                          session.id,
+                          callId,
+                          allowed,
+                          undefined,
+                          remember,
+                        ),
                       ).catch((e) => setError(e.message));
                     }}
                   />
                 )}
-                <div className={`composer-region ${empty ? "empty" : ""}`}>
+                <div
+                  className={`composer-region ${empty ? "empty" : ""} ${!session ? "new-session-region" : ""}`}
+                >
                   {session && (
                     <AgentActivity
                       motionEnabled={state.settings.motion}
@@ -834,96 +801,113 @@ export default function App() {
                       onError={setError}
                     />
                   )}
-                  <Composer
-                    platform={state.platform}
+                  <NewSessionScreen
+                    active={!session}
+                    projects={state.projects}
+                    selectedId={projectId}
+                    busy={startingSession || sending || attaching}
                     motionEnabled={
                       state.settings.motion && state.settings.homeAnimation
                     }
-                    value={draft}
-                    onChange={changeDraft}
-                    onSend={() => void send()}
-                    onStop={() => void stop()}
-                    running={running}
-                    sending={sending || compactingId === session?.id}
-                    attaching={attaching}
-                    attachmentProgress={attachmentProgress}
-                    onAttach={(kind) => void attach(kind)}
-                    onDropFiles={(files) => void dropFiles(files)}
-                    model={session?.model || model}
-                    effort={
-                      (session ? session.effort : effort) ||
-                      state.settings.effort ||
-                      "auto"
-                    }
-                    onEffort={(value) => {
-                      if (session)
-                        void unwrap(
-                          bridge.updateSession(session.id, { effort: value }),
-                        ).catch((error) => setError(error.message));
-                      else setEffort(value);
-                    }}
-                    contextFill={session?.contextFill}
-                    onCompact={() => void compact()}
-                    compacting={compactingId === session?.id}
-                    compactDisabled={!session?.messages.length}
-                    sessionId={session?.id}
-                    queuedMessages={session?.queuedInputs || []}
-                    onEditQueued={async (id, content) => {
-                      if (session)
-                        await unwrap(
-                          bridge.updateQueuedInput(session.id, id, content),
-                        );
-                    }}
-                    onRemoveQueued={async (id) => {
-                      if (session)
-                        await unwrap(bridge.removeQueuedInput(session.id, id));
-                    }}
-                    onSteerQueued={async (id) => {
-                      if (session)
-                        await unwrap(bridge.steerQueuedInput(session.id, id));
-                    }}
-                    onResumeQueue={async () => {
-                      if (session) await unwrap(bridge.resumeQueue(session.id));
-                    }}
-                    onError={setError}
-                    permissionMode={session?.permissionMode || permissionMode}
-                    onPermissionMode={(value) => {
-                      if (session)
-                        void unwrap(
-                          bridge.updateSession(session.id, {
-                            permissionMode: value,
-                          }),
+                    onSelect={(id) => void assignProject(id)}
+                    onBrowse={() => void chooseProject()}
+                    onMore={() => setProjectPicker("current")}
+                  >
+                    <Composer
+                      showTitle={!!session}
+                      platform={state.platform}
+                      motionEnabled={
+                        state.settings.motion && state.settings.homeAnimation
+                      }
+                      value={draft}
+                      onChange={changeDraft}
+                      onSend={() => void send()}
+                      onStop={() => void stop()}
+                      running={running}
+                      sending={sending || compactingId === session?.id}
+                      attaching={attaching}
+                      attachmentProgress={attachmentProgress}
+                      onAttach={(kind) => void attach(kind)}
+                      onDropFiles={(files) => void dropFiles(files)}
+                      model={session?.model || model}
+                      effort={
+                        (session ? session.effort : effort) ||
+                        state.settings.effort ||
+                        "auto"
+                      }
+                      onEffort={(value) => {
+                        if (session)
+                          void unwrap(
+                            bridge.updateSession(session.id, { effort: value }),
+                          ).catch((error) => setError(error.message));
+                        else setEffort(value);
+                      }}
+                      contextFill={session?.contextFill}
+                      onCompact={() => void compact()}
+                      compacting={compactingId === session?.id}
+                      compactDisabled={!session?.messages.length}
+                      sessionId={session?.id}
+                      queuedMessages={session?.queuedInputs || []}
+                      onEditQueued={async (id, content) => {
+                        if (session)
+                          await unwrap(
+                            bridge.updateQueuedInput(session.id, id, content),
+                          );
+                      }}
+                      onRemoveQueued={async (id) => {
+                        if (session)
+                          await unwrap(
+                            bridge.removeQueuedInput(session.id, id),
+                          );
+                      }}
+                      onSteerQueued={async (id) => {
+                        if (session)
+                          await unwrap(bridge.steerQueuedInput(session.id, id));
+                      }}
+                      onResumeQueue={async () => {
+                        if (session)
+                          await unwrap(bridge.resumeQueue(session.id));
+                      }}
+                      onError={setError}
+                      permissionMode={session?.permissionMode || permissionMode}
+                      onPermissionMode={(value) => {
+                        if (session)
+                          void unwrap(
+                            bridge.updateSession(session.id, {
+                              permissionMode: value,
+                            }),
+                          ).catch((e) => setError(e.message));
+                        else setPermissionMode(value);
+                      }}
+                      models={state.models}
+                      onManageModels={() => openSettings("models")}
+                      onModel={(value) => {
+                        if (session)
+                          void unwrap(
+                            bridge.updateSession(session.id, { model: value }),
+                          ).catch((e) => setError(e.message));
+                        else setModel(value);
+                      }}
+                      project={selectedProject}
+                      projects={state.projects}
+                      onProject={(id) => {
+                        if (id) void assignProject(id);
+                      }}
+                      onChooseProject={() => void chooseProject()}
+                      onSkills={() => {
+                        setPage("skills");
+                      }}
+                      skills={state.skills}
+                      attachments={attached}
+                      onRemove={(key) => {
+                        void saveAttachments(
+                          attached.filter((f) => attachmentKey(f) !== key),
                         ).catch((e) => setError(e.message));
-                      else setPermissionMode(value);
-                    }}
-                    models={state.models}
-                    onManageModels={() => openSettings("models")}
-                    onModel={(value) => {
-                      if (session)
-                        void unwrap(
-                          bridge.updateSession(session.id, { model: value }),
-                        ).catch((e) => setError(e.message));
-                      else setModel(value);
-                    }}
-                    project={selectedProject}
-                    projects={state.projects}
-                    onProject={(id) => {
-                      if (id) void assignProject(id);
-                    }}
-                    onChooseProject={() => void chooseProject()}
-                    onSkills={() => {
-                      setPage("skills");
-                    }}
-                    skills={state.skills}
-                    attachments={attached}
-                    onRemove={(key) => {
-                      void saveAttachments(
-                        attached.filter((f) => attachmentKey(f) !== key),
-                      ).catch((e) => setError(e.message));
-                    }}
-                    empty={empty}
-                    disabled={session?.archived}
-                  />
+                      }}
+                      empty={empty}
+                      disabled={session?.archived}
+                    />
+                  </NewSessionScreen>
                   {session?.archived && (
                     <button
                       className="restore-button"
@@ -960,13 +944,14 @@ export default function App() {
                 onStop={async () => {
                   await unwrap(bridge.stopAgent(session.id, selectedAgent.id));
                 }}
-                onApprove={(callId, allowed) => {
+                onApprove={(callId, allowed, remember) => {
                   void unwrap(
                     bridge.approveTool(
                       session.id,
                       callId,
                       allowed,
                       selectedAgent.id,
+                      remember,
                     ),
                   ).catch((e) => setError(e.message));
                 }}
@@ -988,6 +973,7 @@ export default function App() {
               />
             ) : null}
           </AnimatePresence>
+          <AnimatePresence key={(session?.id || "new") + ":" + panelScope}>
           {session && panelLayout.panels.length > 0 && (
             <WorkspaceDock
               key={session.id + ":" + panelScope}
@@ -1013,15 +999,14 @@ export default function App() {
               }
             />
           )}
+          </AnimatePresence>
         </div>
         <ProjectPicker
           open={!!projectPicker}
           projects={state.projects}
           busy={startingSession}
           onClose={() => setProjectPicker(null)}
-          onSelect={(id) =>
-            void (projectPicker === "new" ? newSession(id) : assignProject(id))
-          }
+          onSelect={(id) => void assignProject(id)}
           onBrowse={() => void chooseProject()}
         />
         {settings && (

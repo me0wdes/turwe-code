@@ -53,6 +53,8 @@ function hint(value: unknown) {
   return typeof value === "string" ? value.replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, 180) : "";
 }
 export function toolActivity(call: ToolCall) {
+  if (call.status === "running" && call.review?.status === "checking")
+    return { icon: "tool" as const, label: "Проверка безопасности", detail: call.label || call.name, status: call.review.model };
   let args: Record<string, unknown> = {};
   try {
     const parsed = JSON.parse(call.arguments);

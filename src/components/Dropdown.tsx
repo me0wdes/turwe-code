@@ -129,7 +129,7 @@ export function ProjectMenu({
       <Menu.Separator className="dropdown-separator" />
       <Menu.Item className="dropdown-item" onSelect={onChoose}>
         <FolderPlus size={15} />
-        Открыть папку…
+        Выбрать или создать папку…
       </Menu.Item>
     </Dropdown>
   );

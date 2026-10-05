@@ -13,10 +13,10 @@ function fixture(t) {
   return { store, dir };
 }
 
-test("starting a chat requires a saved project and leaves no empty chats on rejection", (t) => {
+test("starting a chat rejects an unknown project without leaving empty chats", (t) => {
   const { store } = fixture(t);
-  for (const id of [undefined, null, "", "missing"]) {
-    assert.throws(() => store.startSession(id), /Выберите|Проект не найден/);
+  for (const id of ["", "missing"]) {
+    assert.throws(() => store.startSession(id), /проект/i);
     assert.equal(store.state.sessions.length, 0);
   }
 });

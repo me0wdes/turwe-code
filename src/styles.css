@@ -630,6 +630,117 @@ p {
   margin: auto;
   position: relative;
 }
+.composer-region.new-session-region {
+  min-height: 0;
+  overflow-y: auto;
+  justify-content: flex-start;
+  padding-top: max(16px, calc((100vh - 810px) / 2));
+  padding-bottom: 28px;
+}
+.new-session-heading,
+.new-session-projects {
+  width: 100%;
+  max-width: 780px;
+  flex-shrink: 0;
+}
+.new-session-heading {
+  text-align: center;
+  margin: 0 0 24px;
+}
+.new-session-heading .turwe-title {
+  height: 112px;
+  margin: 0 auto 12px;
+}
+.new-session-heading h2 {
+  font-size: 22px;
+  font-weight: 550;
+  letter-spacing: -0.5px;
+  margin: 0 0 8px;
+}
+.new-session-heading p {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 0;
+}
+.new-session-region .composer-wrap {
+  flex-shrink: 0;
+}
+.new-session-projects {
+  margin-top: 25px;
+}
+.new-session-projects-heading,
+.new-session-projects-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.new-session-projects-heading button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.new-session-projects-heading button,
+.new-session-projects-footer button {
+  padding: 6px 0;
+  color: var(--secondary);
+}
+.new-session-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.new-session-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  min-width: 0;
+  text-align: left;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  background: var(--surface);
+}
+.new-session-option[aria-pressed="true"] {
+  border-color: var(--muted);
+  background: var(--surface-hover);
+}
+.new-session-option:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+.new-session-option > svg {
+  color: var(--secondary);
+  flex-shrink: 0;
+}
+.new-session-option > span {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.new-session-option strong,
+.new-session-option small {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.new-session-option strong {
+  font-size: 13px;
+  font-weight: 550;
+}
+.new-session-option small,
+.new-session-projects-footer {
+  color: var(--muted);
+  font-size: 11px;
+}
+.new-session-projects-footer {
+  margin-top: 10px;
+}
 .composer-centered {
   margin: 0 auto;
 }

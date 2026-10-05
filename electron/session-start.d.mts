@@ -5,5 +5,5 @@ export function requireProject(
 ): Project;
 export function findEmptySession(
   sessions: Session[],
-  projectId: string,
+  projectId: string | null,
 ): Session | undefined;

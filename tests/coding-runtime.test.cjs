@@ -38,6 +38,32 @@ async function fixture(t) {
   return { dir, project, store, session, coding, mcp };
 }
 
+test("scoped grants apply through runtime policy and project context; reset independently revokes them", async (t) => {
+  const { store, session, coding, project } = await fixture(t);
+  const { rememberToolApproval } = require("../electron/action-approvals.cjs");
+  const { definitions } = require("../electron/coding-runtime.cjs");
+  const read = definitions.find((d) => d.function.name === "FileRead");
+  const bash = definitions.find((d) => d.function.name === "Bash");
+  const owner = store.state.projects[0];
+  session.permissionMode = "simple";
+  await fs.writeFile(path.join(project, "AGENTS.md"), "scoped-context-marker");
+  rememberToolApproval(read, owner, store.state, "project");
+  rememberToolApproval(bash, owner, store.state, "global");
+  assert.equal(coding.policy(session, read, { path: "other.md" }).action, "allow");
+  assert.equal(coding.policy(session, bash, { command: "echo example" }).action, "allow");
+  assert.match(coding.context.prompt(session), /scoped-context-marker/);
+  const before = await coding.ui(session, "state");
+  assert.equal(before.approvedActionCount, 1);
+  assert.equal(before.globalApprovalCount, 1);
+  await coding.ui(session, "clearApprovals", { scope: "project" });
+  assert.equal(coding.policy(session, read, { path: "other.md" }).action, "ask");
+  assert.equal(coding.policy(session, bash, { command: "echo example" }).action, "allow");
+  await coding.ui(session, "clearApprovals", { scope: "global" });
+  assert.equal(coding.policy(session, bash, { command: "echo example" }).action, "ask");
+  const after = await coding.ui(session, "state");
+  assert.equal(after.approvedActionCount + after.globalApprovalCount, 0);
+});
+
 test("path-scoped rules are applied only to matching files", async (t) => {
   const { project } = await fixture(t);
   await fs.mkdir(path.join(project, ".claude/rules"), { recursive: true });
@@ -68,7 +94,7 @@ test("browser tools are available in a chat without a project", async (t) => {
   const { coding, store } = await fixture(t);
   const names = coding.definitions(store.createSession()).map(tool => tool.function.name);
   assert.ok(names.includes("Preview"));
-  assert.ok(!names.includes("FileWrite"));
+  assert.ok(names.includes("FileWrite"));
 });
 test("projectless commands run in the home directory with normal permissions and session ownership", async (t) => {
   const { coding, store, mcp } = await fixture(t);
@@ -78,7 +104,7 @@ test("projectless commands run in the home directory with normal permissions and
   for (const name of ["Bash", "Process", "Preview"]) assert.ok(definitions.some(t => t.function.name === name), name);
   const bash = definitions.find(t => t.function.name === "Bash");
   const args = {command: process.platform === "win32" ? '(Get-Location).Path' : 'pwd', show:true};
-  assert.equal(coding.policy(session,bash,args).action,"ask");
+  assert.equal(coding.policy(session,bash,args).action,"review");
   session.permissionMode="plan";
   assert.equal(coding.policy(session,bash,args).action,"deny");
   session.permissionMode="bypass";
@@ -116,7 +142,7 @@ test("real shell emits output and nonzero exit code; search uses project scope",
   assert.equal(result.exitCode, 7);
   assert.equal(result.cwd, project);
 });
-test("Plan and deny rules block edits even in bypass; allow is scoped to matching files", async (t) => {
+test("Plan blocks edits, bypass skips permission rules, and auto allows only matching rules", async (t) => {
   const { session, coding, store } = await fixture(t);
   const tool = coding
     .definitions(session)
@@ -129,14 +155,14 @@ test("Plan and deny rules block edits even in bypass; allow is scoped to matchin
   ];
   assert.equal(
     coding.policy(session, tool, { path: "private/a" }).action,
-    "deny",
+    "allow",
   );
   assert.equal(coding.policy(session, tool, { path: "src/a" }).action, "allow");
   session.permissionMode = "auto";
   store.state.projects[0].permissionRules = [
     { tool: "FileWrite", pattern: "src/**", action: "allow" },
   ];
-  assert.equal(coding.policy(session, tool, { path: "a" }).action, "ask");
+  assert.equal(coding.policy(session, tool, { path: "a" }).action, "review");
   assert.equal(coding.policy(session, tool, { path: "src/a" }).action, "allow");
 });
 test("controller executes actual file tools and tasks and sends effort", async (t) => {
@@ -229,7 +255,7 @@ test("policy normalizes paths, checks every patch file and preserves profile res
   const { session, coding, store } = await fixture(t);
   const tool = (name) =>
     coding.definitions(session).find((t) => t.function.name === name);
-  session.permissionMode = "bypass";
+  session.permissionMode = "auto";
   store.state.projects[0].permissionRules = [
     { tool: "*", pattern: "private/**", action: "deny" },
   ];
@@ -277,6 +303,7 @@ test("policy normalizes paths, checks every patch file and preserves profile res
 
 test("automatic compaction trims closed tool rounds inside a single long turn", async (t) => {
   const { session, store } = await fixture(t);
+  session.permissionMode = "bypass";
   store.state.settings.contextChars = 12000;
   let step = 0,
     summaries = 0,
@@ -461,6 +488,7 @@ test("worktree isolates edits and Git commit uses only selected paths", async (t
 });
 test("project memory and rules persist, manual compaction retains original history", async (t) => {
   const { session, coding, project, store } = await fixture(t);
+  session.permissionMode = "plan";
   await fs.writeFile(path.join(project, "AGENTS.md"), "Use fixture tests");
   coding.context.writeMemory(session, { content: "Prefer TypeScript" });
   assert.match(coding.prompt(session), /Use fixture tests/);

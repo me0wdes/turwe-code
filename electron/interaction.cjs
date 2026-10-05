@@ -1,11 +1,11 @@
-const PERMISSION_MODES = ["ask", "auto", "bypass", "plan"];
+const PERMISSION_MODES = ["ask", "simple", "auto", "bypass", "plan"];
 function normalizeMode(mode) {
   return PERMISSION_MODES.includes(mode) ? mode : "auto";
 }
 function needsApproval(mode, tool) {
   if (tool.interaction === "question") return false;
-  if (mode === "bypass") return false;
-  if (mode === "ask" || tool.requiresApproval) return true;
+  if (mode === "bypass" || mode === "auto") return false;
+  if (mode === "ask" || mode === "simple" || tool.requiresApproval) return true;
   return tool.readOnly !== true && tool.mcp?.readOnly !== true;
 }
 function boundedText(value, max, required = true) {

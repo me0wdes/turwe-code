@@ -39,14 +39,14 @@ const definitions = [
   tool(
     "FileRead",
     "Чтение файла",
-    "Read project UTF-8 file with hash, optional line offset and limit. Paths are relative to this session workspace. Set show=true when the user asks to open/show the file in the editor; omit for routine context reads.",
+    "Read a UTF-8 file with hash, optional line offset and limit. Available without a project. Accepts absolute paths, ~/ paths and paths relative to the workspace (home directory without a project), including outside context files. Set show=true when the user asks to open/show the file in the editor; omit for routine context reads.",
     { path: S, offset: N, limit: N, show: B },
     ["path"],
   ),
   tool(
     "FileWrite",
     "Запись файла",
-    "Write a project file. Creates a checkpoint. For an existing file read it first and pass expectedHash.",
+    "Write a file at a relative path inside the working project. Without a project, automatically creates this chat's own folder under Documents/Turwe/Projects. Creates a checkpoint. For an existing file read it first and pass expectedHash.",
     { path: S, content: S, expectedHash: S },
     ["path", "content"],
     false,
@@ -70,15 +70,23 @@ const definitions = [
   tool(
     "Glob",
     "Поиск файлов",
-    "Find project files using glob, excludes dependencies and credentials.",
-    { pattern: S },
+    "Find files using glob, excludes dependencies and credentials. Optional path selects a directory, including an absolute path outside the project. Defaults to the workspace (home without a project). Choose a relevant directory rather than scanning the whole computer.",
+    { pattern: S, path: S },
   ),
   tool(
     "Grep",
     "Поиск по коду",
-    "Search file contents using ripgrep regular expressions; returns paths, line numbers and matching text.",
-    { pattern: S, glob: S, literal: B, caseSensitive: B },
+    "Search file contents using ripgrep regular expressions; returns paths, line numbers and matching text. Optional path selects a directory, including outside the project. Defaults to the workspace (home without a project).",
+    { pattern: S, path: S, glob: S, literal: B, caseSensitive: B },
     ["pattern"],
+  ),
+  tool(
+    "CreateWorkspace",
+    "Создание рабочей папки",
+    "Create this chat's working project under Documents/Turwe/Projects when you need to produce files or run a coding task and no project is selected. Returns the existing workspace if already selected. All later relative file writes and commands use this folder. Do not create a folder for a conversation or context-only reads.",
+    { name: { type: "string", description: "Short descriptive project name" } },
+    [],
+    false,
   ),
   tool(
     "Bash",
@@ -96,7 +104,11 @@ const definitions = [
               : ["sh", "bash"],
       },
       background: B,
-      show: { type: "boolean", description: "Show the command output in the terminal widget. Background processes are shown automatically." },
+      show: {
+        type: "boolean",
+        description:
+          "Show the command output in the terminal widget. Background processes are shown automatically.",
+      },
       timeoutMs: N,
     },
     ["command"],
@@ -110,7 +122,11 @@ const definitions = [
       id: S,
       operation: { type: "string", enum: ["list", "status", "stop", "input"] },
       input: S,
-      show: { type: "boolean", description: "Show this process in the terminal widget when the user asks to see its output." },
+      show: {
+        type: "boolean",
+        description:
+          "Show this process in the terminal widget when the user asks to see its output.",
+      },
     },
     ["operation"],
     false,
@@ -279,12 +295,8 @@ const definitions = [
   ),
 ];
 const projectNames = new Set([
-  "FileRead",
-  "FileWrite",
   "FileEdit",
   "apply_patch",
-  "Glob",
-  "Grep",
   "Memory",
   "LSP",
   "Git",
@@ -300,7 +312,7 @@ function createCodingRuntime({
 }) {
   const files = createWorkspaceFiles({ store, directory }),
     processes = createProcesses({ store, files, emit }),
-    context = createContext({ store, files, emit }),
+    context = createContext({ store, files, emit, definitions }),
     git = createGit({ store, files, directory }),
     lsp = createLsp({ files, store });
   let preview, controller;
@@ -324,20 +336,35 @@ function createCodingRuntime({
     switch (name) {
       case "FileRead":
         result = await files.read(session, args);
-        result.rules = instructions(
-          files.root(session),
-          args.path,
-          (path) =>
-            decision(
-              session,
-              definitions.find((t) => t.function.name === "FileRead"),
-              { path },
-              store.state.projects.find((p) => p.id === session.projectId),
-            ).action === "allow",
-        );
+        result.rules =
+          !session.projectId || result.external
+            ? []
+            : instructions(
+                files.root(session),
+                result.path,
+                (path) =>
+                  decision(
+                    session,
+                    definitions.find((t) => t.function.name === "FileRead"),
+                    { path },
+                    store.state.projects.find(
+                      (p) => p.id === session.projectId,
+                    ),
+                    store.state,
+                  ).action === "allow",
+              );
+        break;
+      case "CreateWorkspace":
+        {
+          const project = store.ensureWorkspace(session, args.name);
+          result = { id: project.id, name: project.name, path: files.root(session) };
+        }
         break;
       case "FileWrite":
-        result = await files.write(session, args);
+        result = {
+          ...(await files.write(session, args)),
+          workspace: files.root(session),
+        };
         break;
       case "FileEdit":
         result = await files.edit(session, args);
@@ -354,6 +381,7 @@ function createCodingRuntime({
               definitions.find((t) => t.function.name === "Glob"),
               { path },
               store.state.projects.find((p) => p.id === session.projectId),
+              store.state,
             ).action !== "deny",
         );
         break;
@@ -366,6 +394,7 @@ function createCodingRuntime({
               definitions.find((t) => t.function.name === "Grep"),
               { path: m.path },
               store.state.projects.find((p) => p.id === session.projectId),
+              store.state,
             ).action !== "deny",
         );
         break;
@@ -602,6 +631,7 @@ function createCodingRuntime({
       copy,
       args,
       store.state.projects.find((p) => p.id === session.projectId),
+      store.state,
     );
     store.state.permissionLog ||= [];
     store.state.permissionLog.push({
@@ -625,6 +655,12 @@ function createCodingRuntime({
           tasks: session.tasks || [],
           plan: session.plan,
           project: store.state.projects.find((p) => p.id === session.projectId),
+          approvedActionCount:
+            (() => {
+              const owner = store.state.projects.find((p) => p.id === session.projectId) || session;
+              return (owner.approvedActions?.length || 0) + (owner.approvedTools?.length || 0);
+            })(),
+          globalApprovalCount: store.state.approvedTools?.length || 0,
           rules: session.projectId ? instructions(files.root(session)) : [],
           profiles: store.state.agentProfiles || [],
           permissionLog: (store.state.permissionLog || [])
@@ -677,6 +713,10 @@ function createCodingRuntime({
         const p = store.state.projects.find((p) => p.id === session.projectId);
         if (!p) throw new Error("Выберите проект");
         p.permissionRules = validateRules(args.rules);
+        for (const affected of store.state.sessions.filter(
+          (s) => s.projectId === p.id,
+        ))
+          controller?.permissionsChanged(affected.id);
         save();
         return null;
       }
@@ -738,6 +778,21 @@ function createCodingRuntime({
         );
         save();
         return null;
+      case "clearApprovals": {
+        if (args.scope !== undefined && !["project", "global"].includes(args.scope))
+          throw new Error("Неизвестная область разрешений");
+        const owner =
+          args.scope === "global" ? store.state :
+            store.state.projects.find((p) => p.id === session.projectId) || session;
+        delete owner.approvedActions;
+        delete owner.approvedTools;
+        for (const affected of store.state.sessions.filter(
+          (s) => args.scope === "global" || (session.projectId ? s.projectId === session.projectId : s.id === session.id),
+        ))
+          controller?.permissionsChanged(affected.id);
+        save();
+        return null;
+      }
       case "lspSettings": {
         if (!Array.isArray(args.servers) || args.servers.length > 20)
           throw new Error("Нужен список до 20 серверов");

@@ -15,7 +15,6 @@ const { randomUUID } = require("node:crypto");
 const { pathToFileURL } = require("node:url");
 const { createStore } = require("./store.cjs");
 const { createUpdateChecker } = require("./updates.cjs");
-const { requireProject } = require("./session-start.mjs");
 const { validateTheme, themeBackground } = require("./themes.mjs");
 const { createCredentials } = require("./credentials.cjs");
 const { restoreLoginPath } = require("./processes.cjs");
@@ -195,8 +194,9 @@ async function invoke(method, args) {
     }
     case "chooseProject": {
       const result = await dialog.showOpenDialog(win, {
-        title: "Выберите папку проекта",
-        properties: ["openDirectory"],
+        title: "Выберите или создайте папку проекта",
+        // macOS needs createDirectory to show the native New Folder button.
+        properties: ["openDirectory", "createDirectory"],
       });
       if (result.canceled) return null;
       const root = fs.realpathSync(result.filePaths[0]);
@@ -246,7 +246,6 @@ async function invoke(method, args) {
     case "send": {
       const [id, content, refs = []] = args,
         s = sessionFor(id);
-      requireProject(store.state, s.projectId);
       const selected = await selectedAttachments(s, refs);
       const job = controller.send(id, content, selected);
       return job.messageId;
@@ -258,11 +257,9 @@ async function invoke(method, args) {
       controller.removeQueuedInput(...args);
       return null;
     case "steerQueuedInput":
-      requireProject(store.state, sessionFor(args[0]).projectId);
       controller.steerQueuedInput(...args);
       return null;
     case "resumeQueue":
-      requireProject(store.state, sessionFor(args[0]).projectId);
       return controller.resumeQueue(args[0]).messageId;
     case "chooseAttachments": {
       const media = args[0] === "media";
@@ -332,7 +329,6 @@ async function invoke(method, args) {
       controller.answer(...args);
       return null;
     case "branch":
-      requireProject(store.state, sessionFor(args[0]).projectId);
       return controller.branch(...args);
     case "inspectGithub":
       return github.inspect(args[0]);
@@ -373,7 +369,6 @@ async function invoke(method, args) {
       return true;
     }
     case "retry":
-      requireProject(store.state, sessionFor(args[0]).projectId);
       return controller.retry(args[0]).messageId;
     case "stopAgent":
       controller.stopAgent(...args);
@@ -486,6 +481,7 @@ async function invoke(method, args) {
         "subagents",
         "theme",
         "effort",
+        "approvalModel",
       ];
       if (Object.keys(input).some((k) => !allowed.includes(k)))
         throw new Error("Неизвестная настройка");
@@ -497,6 +493,10 @@ async function invoke(method, args) {
       }
       if ("theme" in input) next.theme = validateTheme(input.theme);
       if ("baseUrl" in input) next.baseUrl = normalizeBaseUrl(input.baseUrl);
+      if ("approvalModel" in input &&
+          (next.baseUrl !== store.state.settings.baseUrl || typeof input.approvalModel !== "string" ||
+           (input.approvalModel && !store.models.list().some((m) => m.id === input.approvalModel))))
+        throw new Error("Выберите проверяющую модель из списка текущего подключения");
       for (const k of ["sounds", "motion", "homeAnimation", "subagents"])
         if (k in input) {
           if (typeof input[k] !== "boolean")
@@ -521,7 +521,10 @@ async function invoke(method, args) {
       if (input.clearKey === true) credentials.clear();
       if (next.baseUrl !== store.state.settings.baseUrl)
         store.models.switchProvider(next.baseUrl);
+      if ("approvalModel" in input)
+        store.models.selectApproval(next.baseUrl, input.approvalModel);
       next.model = store.state.settings.model;
+      next.approvalModel = store.state.settings.approvalModel;
       store.state.settings = next;
       store.save();
       win.setBackgroundColor(themeBackground(next.theme));
@@ -561,7 +564,7 @@ app
         ]),
       );
     }
-    store = createStore(app.getPath("userData"));
+    store = createStore(app.getPath("userData"), { documents: app.getPath("documents") });
     updates = createUpdateChecker({
       version: require("../package.json").version,
       openExternal: (url) => shell.openExternal(url),

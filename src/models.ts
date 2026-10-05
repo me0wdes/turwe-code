@@ -1,1 +1,1 @@
-export { DEFAULT_MODEL, createModelLibrary } from "../electron/model-library.mjs";
+export { DEFAULT_MODEL, createModelLibrary, approvalModel } from "../electron/model-library.mjs";

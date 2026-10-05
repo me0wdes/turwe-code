@@ -23,3 +23,24 @@ test('HTTP transport never follows redirects itself or forwards requests to unsa
   await assert.rejects(fetch('http://remote.example/mcp'), /HTTPS/i);
   assert.equal(attempts, 1);
 });
+
+test('OAuth diagnostics preserve error classes for SDK recovery and never mistake a token error for registration', async () => {
+  const { InvalidGrantError } = require('@modelcontextprotocol/sdk/server/auth/errors.js');
+  const metadata = { token_endpoint: 'https://auth.example/token', registration_endpoint: 'https://auth.example/register' };
+  const fetch = createBoundedFetch({
+    oauthMetadata: () => metadata,
+    fetch: async () => new Response(JSON.stringify({ error: 'invalid_grant', error_description: 'expired fixture-code' }), { status: 400 }),
+  });
+  await assert.rejects(fetch(metadata.token_endpoint, { method: 'POST' }), error => {
+    assert.ok(error instanceof InvalidGrantError);
+    assert.equal(error.mcpPhase, 'token');
+    assert.equal(error.httpStatus, 400);
+    return true;
+  });
+  // The initial MCP 401 must still reach the transport to initiate discovery.
+  const transport = createBoundedFetch({ oauthMetadata: () => metadata, fetch: async () => new Response('Unauthorized', { status: 401 }) });
+  assert.equal((await transport('https://mcp.example/mcp', { method: 'POST' })).status, 401);
+  // Same-origin redirects are handled by the SDK and must not become auth failures.
+  const redirect = createBoundedFetch({ oauthMetadata: () => metadata, fetch: async () => new Response(null, { status: 307, headers: { Location: 'https://auth.example/register-v2' } }) });
+  assert.equal((await redirect(metadata.registration_endpoint, { method: 'POST' })).status, 307);
+});

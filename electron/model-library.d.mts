@@ -5,6 +5,7 @@ import type {
   Settings,
 } from "../src/types";
 export const DEFAULT_MODEL: string;
+export function approvalModel(models: ModelOption[], selected?: string): string;
 export function modelPresets(baseUrl?: string): ModelOption[];
 export function validateModel(input: {
   id: string;
@@ -21,6 +22,7 @@ export function createModelLibrary(
   list(): ModelOption[];
   add(baseUrl: string, input: { id: string; name?: string }): void;
   selectDefault(baseUrl: string, id: string): void;
+  selectApproval(baseUrl: string, id: string): void;
   remove(baseUrl: string, id: string): void;
   switchProvider(baseUrl: string): void;
 };

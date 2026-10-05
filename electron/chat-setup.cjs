@@ -1,5 +1,6 @@
 const { parseSkill, upsertSkill, assignSkill } = require("./skills.cjs");
 const { validateHttpUrl } = require("./mcp-http.cjs");
+const { figmaEndpoint } = require("./mcp-errors.cjs");
 
 const PRESETS = {
   figma: {
@@ -41,7 +42,7 @@ const definitions = [
   ),
   tool(
     "connect_connector",
-    "Prepare and connect an MCP service directly in chat. Choose exactly one saved connectorId, known preset, or a user-provided MCP url. Figma preset uses browser OAuth; figma-desktop requires the local Figma app MCP server. The app shows approval, opens sign-in and waits for actual tool discovery. After success continue the original task; use ToolSearch if needed. Do not ask the user to navigate settings for these supported flows. Never put tokens into arguments.",
+    "Prepare and connect an MCP service directly in chat. Choose exactly one saved connectorId, known preset, or a user-provided MCP url. The URL determines Remote vs Desktop, not the connection name. Figma remote requires client registration before browser OAuth; figma-desktop requires the local Figma app MCP server to be enabled. Report only the returned diagnostic facts on failure; do not invent account settings or switch Remote to Desktop unless the user chooses that alternative. The app shows approval, opens sign-in when registration succeeds and waits for actual tool discovery. After success continue the original task; use ToolSearch if needed. Never put tokens into arguments.",
     {
       connectorId: { type: "string" },
       preset: { type: "string", enum: Object.keys(PRESETS) },
@@ -71,7 +72,7 @@ const definitions = [
 
 function connectionError(message = "") {
   if (message.includes("Figma remote connection failed"))
-    return "Не удалось подключиться к Figma. Проверьте доступ к аккаунту: удалённый сервер может требовать одобренный Figma MCP-клиент. Можно также подключить локальный сервер Figma Desktop.";
+    return "Не удалось подключиться к Figma. Точная причина не установлена; повторите подключение для новой диагностики.";
   if (message.includes("OAuth sign-in was declined"))
     return "Вход отменён в браузере. Чтобы продолжить, подключитесь ещё раз.";
   if (/sign-in timed out|server timed out/.test(message))
@@ -117,9 +118,11 @@ function createChatSetup({ store, mcp, emit = () => {} }) {
         throw new Error("Используйте способ входа готового сервиса");
     } else {
       const url = validateHttpUrl(args.url, { query: false });
+      const figma = figmaEndpoint(url.href);
+      const preset = figma ? PRESETS[figma === "remote" ? "figma" : "figma-desktop"] : undefined;
       if (args.auth !== undefined && !["oauth", "none"].includes(args.auth))
         throw new Error("Выберите OAuth или подключение без авторизации");
-      const name = args.name === undefined ? url.hostname : args.name;
+      const name = args.name === undefined ? preset?.name || url.hostname : args.name;
       if (
         typeof name !== "string" ||
         !name.trim() ||
@@ -131,7 +134,7 @@ function createChatSetup({ store, mcp, emit = () => {} }) {
         name: name.trim(),
         type: "http",
         url: url.href,
-        auth: args.auth || "oauth",
+        auth: args.auth || preset?.auth || "oauth",
       };
     }
     // Preserve existing authentication and secrets. A chat must not reset them.
@@ -147,8 +150,9 @@ function createChatSetup({ store, mcp, emit = () => {} }) {
   function describe(name, args, session) {
     if (name === "connect_connector") {
       const { config, existing } = target(args);
-      const figmaRemote = config.url === PRESETS.figma.url;
-      const figmaDesktop = config.url === PRESETS["figma-desktop"].url;
+      const figma = figmaEndpoint(config.url);
+      const figmaRemote = figma === "remote";
+      const figmaDesktop = figma === "desktop";
       return {
         kind: "connector",
         title: config.name,
@@ -168,7 +172,7 @@ function createChatSetup({ store, mcp, emit = () => {} }) {
           ? {
               helpUrl: figmaDesktop
                 ? "https://developers.figma.com/docs/figma-mcp-server/local-server-installation/"
-                : "https://developers.figma.com/docs/figma-mcp-server/",
+                : "https://developers.figma.com/docs/figma-mcp-server/remote-server-installation/",
             }
           : {}),
         ...(figmaRemote ? { alternative: "figma-desktop" } : {}),
@@ -231,6 +235,7 @@ function createChatSetup({ store, mcp, emit = () => {} }) {
             auth: c.auth,
             status: c.status,
             toolCount: c.toolCount,
+            ...(c.error ? { error: connectionError(c.error), diagnostic: c.diagnostic } : {}),
           })),
           presets: PRESETS,
         }),
@@ -279,7 +284,7 @@ function createChatSetup({ store, mcp, emit = () => {} }) {
         status: "connecting",
       };
       const progress = (c) => {
-        latest = { ...latest, status: c.status, toolCount: c.toolCount || 0 };
+        latest = { ...latest, status: c.status, toolCount: c.toolCount || 0, ...(c.error ? { error: connectionError(c.error) } : {}) };
         onProgress(latest);
       };
       progress({ status: "connecting" });
@@ -298,7 +303,7 @@ function createChatSetup({ store, mcp, emit = () => {} }) {
           isError: !connected,
           text: connected
             ? `Подключено: ${connector.name}. Доступно инструментов: ${result.toolCount}. Продолжай исходную задачу; при необходимости вызови ToolSearch.`
-            : `Не удалось подключить ${connector.name}: ${latest.error}. Не утверждай, что подключено. Предложи устранить конкретную причину или повторить вход; не повторяй запрос без изменения условий.`,
+            : `Не удалось подключить ${connector.name}: ${latest.error}\n${result.diagnostic ? `Диагностика: ${JSON.stringify(result.diagnostic)}\n` : ""}Сообщи только подтверждённую причину. Не утверждай, что подключено, и не повторяй запрос без изменения условий.${result.diagnostic?.phase === "registration" ? " Отказ регистрации клиента происходит до входа: не предлагай повторный вход или выдуманное одобрение приложения в Security / Apps." : ""}${figmaEndpoint(config.url) === "remote" ? " Figma принимает заявки на новый Remote-клиент от разработчика приложения. Desktop — отдельный локальный сервер; предложи его как вариант и дождись выбора пользователя, не подключай автоматически." : ""}`,
         };
       } finally {
         unsubscribe?.();

@@ -13,7 +13,8 @@ import {
 import { bridge, unwrap } from "../bridge";
 import { useChatMotion } from "../chat-motion";
 import { fluid } from "../motion";
-import type { ToolCall } from "../types";
+import type { ApprovalChoice, ToolCall } from "../types";
+import { ApprovalActions } from "./ApprovalActions";
 import "./setup-card.css";
 
 export function SetupCard({
@@ -26,7 +27,7 @@ export function SetupCard({
   call: ToolCall;
   sessionId: string;
   retrySessionId?: string;
-  onApprove: (id: string, allowed: boolean) => void;
+  onApprove: (id: string, allowed: boolean, remember?: ApprovalChoice) => void;
   onError: (message: string) => void;
 }) {
   const setup = call.setup!;
@@ -42,6 +43,7 @@ export function SetupCard({
   const failed = call.status === "error";
   const stopped = ["stopped", "denied"].includes(call.status);
   const approval = call.status === "approval";
+  const reviewing = call.review?.status === "checking" && active;
   const Icon = done
     ? Check
     : stopped
@@ -51,7 +53,7 @@ export function SetupCard({
         : connector
           ? Code2
           : Sparkles;
-  const status = done
+  const status = reviewing ? "Проверка безопасности" : done
     ? connector
       ? "Подключено"
       : setup.kind === "install"
@@ -123,7 +125,8 @@ export function SetupCard({
       {setup.endpoint && (
         <span className="chat-setup-endpoint">{setup.endpoint}</span>
       )}
-      <p className={failed ? "chat-setup-error" : undefined}>{description}</p>
+      <p className={failed ? "chat-setup-error" : undefined}>{reviewing ? `Проверяет ${call.review!.model || "модель"}. Действие ещё не запущено.` : description}</p>
+      {call.review?.reason && <p className="field-hint">{call.review.model}: {call.review.reason}</p>}
       {setup.source && (
         <>
           <button
@@ -156,24 +159,7 @@ export function SetupCard({
       )}
       <div className="chat-setup-actions">
         {approval && (
-          <>
-            <button
-              className="primary-button"
-              onClick={() => onApprove(call.id, true)}
-            >
-              {connector
-                ? "Подключить"
-                : setup.kind === "install"
-                  ? "Установить скилл"
-                  : "Создать скилл"}
-            </button>
-            <button
-              className="secondary-button"
-              onClick={() => onApprove(call.id, false)}
-            >
-              Отмена
-            </button>
-          </>
+          <ApprovalActions call={call} onApprove={onApprove} onceLabel={connector ? "Подключить" : setup.kind === "install" ? "Установить скилл" : "Создать скилл"} />
         )}
         {signIn && setup.connectorId && (
           <button

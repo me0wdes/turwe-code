@@ -1,5 +1,6 @@
 const fs = require("node:fs/promises");
 const path = require("node:path");
+const { homedir } = require("node:os");
 const { randomUUID, createHash } = require("node:crypto");
 const { execFile } = require("node:child_process");
 const { promisify } = require("node:util");
@@ -83,12 +84,62 @@ async function readText(target, optional = false) {
 function createWorkspaceFiles({ store, directory }) {
   store.state.checkpoints ||= [];
   const locks = new Map();
-  function root(session) {
-    const project = store.state.projects.find(
-      (p) => p.id === session.projectId,
-    );
-    if (!project) throw new Error("Выберите проект");
+  function root(session, create = false) {
+    const owner =
+      session.rootSessionId &&
+      store.state.sessions.find((s) => s.id === session.rootSessionId);
+    const projectId = session.projectId || owner?.projectId;
+    const project = store.state.projects.find((p) => p.id === projectId);
+    if (!project) {
+      if (create) return store.ensureWorkspace(session).path;
+      throw new Error(
+        "Выберите проект или создайте рабочую папку через CreateWorkspace",
+      );
+    }
     return session.worktreePath || project.path;
+  }
+  function readRoot(session) {
+    if (
+      session.projectId ||
+      (session.rootSessionId &&
+        store.state.sessions.find((s) => s.id === session.rootSessionId)
+          ?.projectId)
+    )
+      return root(session);
+    return homedir();
+  }
+  async function readPath(session, value) {
+    if (typeof value !== "string" || !value || value.includes("\0"))
+      throw new Error("Укажите путь к файлу или папке");
+    const expanded = /^~[\\/]/.test(value)
+      ? path.join(homedir(), value.slice(2))
+      : value;
+    const target = path.resolve(readRoot(session), expanded);
+    // Reading may leave the workspace; credential/dependency exclusions still apply.
+    safeRelative(target.slice(path.parse(target).root.length) || ".");
+    const resolved = await fs.realpath(target);
+    safeRelative(resolved.slice(path.parse(resolved).root.length) || ".");
+    return resolved;
+  }
+  function location(session, target) {
+    let base = readRoot(session);
+    try {
+      base = require("node:fs").realpathSync(base);
+    } catch {}
+    const relative = path.relative(base, target);
+    const ownerProject =
+      session.rootSessionId &&
+      store.state.sessions.find((s) => s.id === session.rootSessionId)
+        ?.projectId;
+    const external =
+      !(session.projectId || ownerProject) ||
+      relative === ".." ||
+      relative.startsWith(`..${path.sep}`) ||
+      path.isAbsolute(relative);
+    return {
+      path: (external ? target : relative || ".").replaceAll("\\", "/"),
+      external,
+    };
   }
   async function locked(key, operation) {
     const previous = locks.get(key) || Promise.resolve();
@@ -101,12 +152,13 @@ function createWorkspaceFiles({ store, directory }) {
     }
   }
   async function read(session, args) {
-    const content = await readText(await inside(root(session), args.path));
+    const target = await readPath(session, args.path);
+    const content = await readText(target);
     const lines = content.split("\n"),
       offset = Math.max(1, Number(args.offset) || 1),
       limit = Math.min(4000, Number(args.limit) || 4000);
     return {
-      path: args.path,
+      ...location(session, target),
       content: lines.slice(offset - 1, offset - 1 + limit).join("\n"),
       hash: hash(content),
       totalLines: lines.length,
@@ -187,6 +239,7 @@ function createWorkspaceFiles({ store, directory }) {
       args.content.includes("\0")
     )
       throw new Error("Нужен текст до 2 МБ");
+    root(session, true);
     return locked(path.resolve(root(session), relative), async () => {
       const before = await readText(
         await inside(root(session), relative, true),
@@ -244,9 +297,11 @@ function createWorkspaceFiles({ store, directory }) {
       pattern.includes("..") ||
       path.isAbsolute(pattern)
     )
-      throw new Error("Нужна маска внутри проекта");
+      throw new Error("Укажите маску файлов, а папку поиска передайте в path");
     const files = [],
-      base = root(session);
+      base = await readPath(session, args.path || ".");
+    if (!(await fs.stat(base)).isDirectory())
+      throw new Error("Укажите папку для поиска файлов");
     const argv = [
       "--files",
       "--null",
@@ -275,7 +330,7 @@ function createWorkspaceFiles({ store, directory }) {
       try {
         const target = await inside(base, entry);
         if ((await fs.stat(target)).isFile())
-          files.push(entry.replaceAll("\\", "/"));
+          files.push(location(session, target).path);
       } catch {}
       if (files.length > 5000) break;
     }
@@ -291,6 +346,9 @@ function createWorkspaceFiles({ store, directory }) {
       args.pattern.length > 2000
     )
       throw new Error("Укажите поисковое выражение");
+    const base = await readPath(session, args.path || ".");
+    if (!(await fs.stat(base)).isDirectory())
+      throw new Error("Укажите папку для поиска по содержимому");
     const argv = [
       "--json",
       "--max-count",
@@ -308,7 +366,7 @@ function createWorkspaceFiles({ store, directory }) {
     let stdout;
     try {
       ({ stdout } = await exec(ripgrepPath(), argv, {
-        cwd: root(session),
+        cwd: base,
         windowsHide: true,
         timeout: 15000,
         maxBuffer: 4 * 1024 * 1024,
@@ -324,8 +382,15 @@ function createWorkspaceFiles({ store, directory }) {
       const event = JSON.parse(line);
       if (event.type === "match") {
         const d = event.data;
+        const entry = d.path.text.replaceAll("\\", "/").replace(/^\.\//, "");
+        let target;
+        try {
+          target = await inside(base, entry);
+        } catch {
+          continue;
+        }
         matches.push({
-          path: d.path.text.replaceAll("\\", "/").replace(/^\.\//, ""),
+          path: location(session, target).path,
           line: d.line_number,
           text: d.lines.text.trimEnd(),
         });

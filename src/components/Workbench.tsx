@@ -25,7 +25,12 @@ import "../workbench.css";
 import { fileManagerLabel } from "../platform";
 import { panelName, type WorkspaceTool } from "../workspace-panels";
 import type { RevealEvent } from "../workspace-reveal";
-type EditorFile = { path: string; content: string; hash: string };
+type EditorFile = {
+  path: string;
+  content: string;
+  hash: string;
+  external?: boolean;
+};
 const editorDrafts = new Map<
   string,
   { opened: EditorFile | null; text: string }
@@ -83,6 +88,10 @@ export function Workbench({
 }) {
   const draftKey =
     session.id + ":" + (session.worktreePath || session.projectId || "");
+  const approvalProject = state.projects.find((p) => p.id === session.projectId);
+  const approvalCount = ((approvalProject || session).approvedActions?.length || 0) +
+    (approvalProject?.approvedTools?.length || 0);
+  const globalApprovalCount = state.approvedTools?.length || 0;
   const [data, setData] = useState<any>(null),
     [busy, setBusy] = useState(false),
     [revision, setRevision] = useState(0);
@@ -257,7 +266,9 @@ export function Workbench({
         </div>
       )}
       {!session.projectId &&
-      !["agents", "mcp", "plan", "preview", "terminal"].includes(tab) ? (
+      !["files", "agents", "mcp", "plan", "preview", "terminal"].includes(
+        tab,
+      ) ? (
         <div className="workbench-empty">
           <Folder size={28} />
           <p>Выберите проект для работы с кодом</p>
@@ -335,7 +346,9 @@ export function Workbench({
                     <span title={opened.path}>{opened.path}</span>
                     <button
                       className="secondary-button"
-                      disabled={busy || !dirty}
+                      disabled={
+                        busy || !dirty || opened.external || !session.projectId
+                      }
                       onClick={() =>
                         void call("write", {
                           path: opened.path,
@@ -354,19 +367,32 @@ export function Workbench({
                       }
                     >
                       <Check size={14} />
-                      {saved && !dirty ? "Сохранено" : "Сохранить"}
+                      {opened.external || !session.projectId
+                        ? "Только чтение"
+                        : saved && !dirty
+                          ? "Сохранено"
+                          : "Сохранить"}
                     </button>
                   </div>
                   <CodeEditor
                     key={opened.path + opened.hash}
                     path={opened.path}
                     value={text}
+                    readOnly={opened.external || !session.projectId}
                     onChange={(v) => {
                       setText(v);
                       setSaved(false);
                     }}
                   />
-                  <div className="workbench-actions">
+                  <div
+                    className="workbench-actions"
+                    style={{
+                      display:
+                        opened.external || !session.projectId
+                          ? "none"
+                          : undefined,
+                    }}
+                  >
                     <button
                       className="quiet-control"
                       onClick={() =>
@@ -895,6 +921,20 @@ export function Workbench({
                   </p>
                 ))}
               </details>
+              <button
+                className="secondary-button"
+                disabled={busy || !approvalCount}
+                onClick={() => void call("clearApprovals", { scope: "project" }).then(refresh)}
+              >
+                Забыть разрешения {session.projectId ? "проекта" : "чата"} ({approvalCount})
+              </button>
+              <button
+                className="secondary-button"
+                disabled={busy || !globalApprovalCount}
+                onClick={() => void call("clearApprovals", { scope: "global" }).then(refresh)}
+              >
+                Забыть разрешения для всех проектов ({globalApprovalCount})
+              </button>
               <div className="workbench-section">
                 <h3>Языковые серверы LSP</h3>
                 <p className="field-hint">

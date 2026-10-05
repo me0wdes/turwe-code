@@ -2,6 +2,13 @@ import catalogue from "./model-catalogue.json" with { type: "json" };
 
 const endpointKey = (url) => url.replace(/\/+$/, "");
 export const DEFAULT_MODEL = catalogue.defaultModel;
+export function approvalModel(models, selected = "") {
+  if (selected) return models.find((model) => model.id === selected)?.id || "";
+  for (const family of ["haiku", "sonnet"])
+    for (const model of models)
+      if (new RegExp(`(?:^|[^a-z])${family}(?:$|[^a-z])`, "i").test(model.id)) return model.id;
+  return "";
+}
 export function modelPresets(baseUrl = "") {
   return endpointKey(baseUrl) === catalogue.baseUrl
     ? catalogue.models.map((model) => ({ ...model }))
@@ -67,6 +74,7 @@ export function createModelLibrary(state, save = () => {}) {
   }
   const initial = ensure(state.settings.baseUrl, true);
   state.settings.model = initial.defaultModel;
+  state.settings.approvalModel = initial.approvalModel || "";
   function current(expected = state.settings.baseUrl) {
     if (endpointKey(expected) !== endpointKey(state.settings.baseUrl))
       throw new Error(
@@ -100,6 +108,14 @@ export function createModelLibrary(state, save = () => {}) {
       state.settings.model = id;
       save();
     },
+    selectApproval(baseUrl, id) {
+      const library = current(baseUrl);
+      if (typeof id !== "string" || (id && !library.models.some((m) => m.id === id)))
+        throw new Error("Сначала добавьте проверяющую модель в свой список");
+      library.approvalModel = id;
+      state.settings.approvalModel = id;
+      save();
+    },
     remove(baseUrl, id) {
       const library = current(baseUrl);
       if (!library.models.some((m) => m.id === id))
@@ -107,6 +123,8 @@ export function createModelLibrary(state, save = () => {}) {
       if (library.models.length === 1)
         throw new Error("Оставьте хотя бы одну модель");
       library.models = library.models.filter((m) => m.id !== id);
+      if (library.approvalModel === id) library.approvalModel = "";
+      state.settings.approvalModel = library.approvalModel || "";
       if (library.defaultModel === id)
         library.defaultModel = library.models[0].id;
       state.settings.model = library.defaultModel;
@@ -120,6 +138,7 @@ export function createModelLibrary(state, save = () => {}) {
         library = ensure(key);
       state.settings.baseUrl = key;
       state.settings.model = library.defaultModel;
+      state.settings.approvalModel = library.approvalModel || "";
       for (const session of state.sessions)
         if (!library.models.some((m) => m.id === session.model))
           replaceSelection(session, library.defaultModel);

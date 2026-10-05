@@ -15,6 +15,7 @@ function fixture(t, options = {}) {
     store,
     getConfig: () => ({ key: "fixture" }),
     emit() {},
+    reviewAction: async () => ({ decision: "allow", reason: "Fixture action" }),
     stream: (request) =>
       new Promise((resolve, reject) => {
         const entry = { ...request, resolve, reject };

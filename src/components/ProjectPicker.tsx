@@ -24,7 +24,7 @@ export function ProjectPicker({
         if (!value && !busy) onClose();
       }}
       title="Выберите проект"
-      description="Чтобы начать чат, выберите папку проекта."
+      description="Выберите существующую папку или создайте новую для рабочих файлов."
       className="project-picker-dialog"
     >
       <div className="project-picker-body">
@@ -53,7 +53,7 @@ export function ProjectPicker({
           onClick={onBrowse}
         >
           <FolderPlus size={18} />
-          Открыть папку…
+          Выбрать или создать папку…
         </button>
       </div>
     </Modal>

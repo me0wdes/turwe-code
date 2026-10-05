@@ -110,8 +110,9 @@ test("stop immediately after approval still prevents execution", async (t) => {
     stream: async () => toolResponse,
     executeTool: () => assert.fail("cancelled action"),
   });
-  const s = store.createSession(),
-    job = controller.send(s.id, "create");
+  const s = store.createSession();
+  s.permissionMode = "ask";
+  const job = controller.send(s.id, "create");
   await waiting;
   controller.approve(s.id, "c1", true);
   controller.stop(s.id);
@@ -127,6 +128,7 @@ function setup(t, options) {
     getConfig: () => ({ key: "test" }),
     emit: () => {},
     getTools: () => [def],
+    reviewAction: async () => ({ decision: "allow", reason: "Fixture action" }),
     ...options,
   });
   return { store, controller, dir };
@@ -221,8 +223,9 @@ test("permission denial never executes tool and stop cancels a pending permissio
     },
     executeTool: () => assert.fail("must not execute"),
   });
-  const s = store.createSession(),
-    job = controller.send(s.id, "do");
+  const s = store.createSession();
+  s.permissionMode = "ask";
+  const job = controller.send(s.id, "do");
   await waiting;
   controller.approve(s.id, "c1", false);
   await job.done;

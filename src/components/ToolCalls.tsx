@@ -12,7 +12,8 @@ import {
 import { toolActivity } from "../activity";
 import { useChatMotion } from "../chat-motion";
 import { fluid } from "../motion";
-import type { QuestionResponse, ToolCall } from "../types";
+import type { ApprovalChoice, QuestionResponse, ToolCall } from "../types";
+import { ApprovalActions } from "./ApprovalActions";
 import { QuestionCard } from "./QuestionCard";
 import { SetupCard } from './SetupCard';
 import { AttachmentCard, attachmentKey } from "./Attachments";
@@ -23,7 +24,7 @@ type Props = {
   sessionId: string;
   retrySessionId?: string;
   onError: (message: string) => void;
-  onApprove: (callId: string, allowed: boolean) => void;
+  onApprove: (callId: string, allowed: boolean, remember?: ApprovalChoice) => void;
   onAnswer: (callId: string, response: QuestionResponse) => Promise<void>;
   onAgentOpen?: (id: string) => void;
 };
@@ -191,26 +192,20 @@ function ToolAction({
                 }
               })()}
             </pre>
+            {call.review && (
+              <p className="tool-review" role={call.review.status === "checking" ? "status" : undefined}>
+                {call.review.status === "checking" ? "Проверка безопасности" : call.review.status === "allowed" ? "Проверка разрешила этот вызов" : "Проверка не разрешила вызов"}
+                {call.review.model && ` · ${call.review.model}`}
+                {call.review.reason && `: ${call.review.reason}`}
+              </p>
+            )}
             {call.status === "approval" ? (
               <div className="tool-approval">
                 <p>
                   {call.approvalReason ||
                     "Проверьте параметры и подтвердите запуск инструмента."}
                 </p>
-                <div>
-                  <button
-                    className="secondary-button"
-                    onClick={() => onApprove(call.id, false)}
-                  >
-                    Отклонить
-                  </button>
-                  <button
-                    className="primary-button"
-                    onClick={() => onApprove(call.id, true)}
-                  >
-                    Разрешить один раз
-                  </button>
-                </div>
+                <ApprovalActions call={call} onApprove={onApprove} />
               </div>
             ) : call.result ? (
               <pre className="tool-result">{call.result}</pre>

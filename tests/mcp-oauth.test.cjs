@@ -50,6 +50,22 @@ test('OAuth credentials preserve issuer and refresh tokens while browser redirec
   assert.equal(await provider.tokens(), undefined);
 });
 
+test('OAuth registration negotiates the server method without advertising unsupported authentication', async t => {
+  let saved = {};
+  const provider = await createOAuthProvider({ read: () => saved, write: v => { saved = v; }, openExternal: async () => {} });
+  t.after(() => provider.close());
+  const advertise = methods => provider.saveDiscoveryState({ authorizationServerMetadata: { token_endpoint_auth_methods_supported: methods } });
+  assert.equal(provider.clientMetadata.token_endpoint_auth_method, 'none');
+  advertise(['client_secret_basic', 'client_secret_post']);
+  assert.equal(provider.clientMetadata.token_endpoint_auth_method, 'client_secret_basic');
+  advertise(['client_secret_post']);
+  assert.equal(provider.clientMetadata.token_endpoint_auth_method, 'client_secret_post');
+  advertise(['none', 'client_secret_basic']);
+  assert.equal(provider.clientMetadata.token_endpoint_auth_method, 'none');
+  advertise(['private_key_jwt']);
+  assert.throws(() => provider.clientMetadata, { code: 'MCP_AUTH_METHOD' });
+});
+
 test('OAuth cancellation closes the loopback listener and reused ports keep registered redirect URI stable', async (t) => {
   let saved = {};
   const abort = new AbortController();

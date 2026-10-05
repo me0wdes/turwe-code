@@ -64,6 +64,7 @@ interface Props {
   attachments: Attachment[];
   onRemove: (path: string) => void;
   empty: boolean;
+  showTitle?: boolean;
   motionEnabled: boolean;
   disabled?: boolean;
 }
@@ -120,7 +121,9 @@ export function Composer(p: Props) {
   }
   return (
     <div className={`composer-wrap ${p.empty ? "composer-centered" : ""}`}>
-      {p.empty && <TurweTitle motionEnabled={p.motionEnabled} />}
+      {p.empty && p.showTitle !== false && (
+        <TurweTitle motionEnabled={p.motionEnabled} />
+      )}
       <QueuedMessages
         key={p.sessionId || "new"}
         messages={p.queuedMessages}
@@ -204,11 +207,11 @@ export function Composer(p: Props) {
               }
               aria-autocomplete="list"
               placeholder={
-                !p.project
-                  ? "Выберите проект, чтобы начать чат…"
-                  : p.running
-                    ? "Добавить следующую задачу…"
-                    : "Какую задачу разберём в вашем проекте?"
+                p.running
+                  ? "Добавить следующую задачу…"
+                  : p.project
+                    ? "Какую задачу разберём в вашем проекте?"
+                    : "Что хотите сделать?"
               }
               value={p.value}
               onChange={(e) => {

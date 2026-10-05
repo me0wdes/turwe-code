@@ -28,8 +28,8 @@ contextBridge.exposeInMainWorld(
     importAttachment: (input) => invoke("importAttachment", input),
     attachmentPreview: (id) => invoke("attachmentPreview", id),
     draftAttachments: (id, files) => invoke("draftAttachments", id, files),
-    approveTool: (id, callId, allowed, agentId) =>
-      invoke("approveTool", id, callId, allowed, agentId),
+    approveTool: (id, callId, allowed, agentId, remember) =>
+      invoke("approveTool", id, callId, allowed, agentId, remember),
     answerQuestion: (id, callId, response, agentId) =>
       invoke("answerQuestion", id, callId, response, agentId),
     branch: (id, messageId, content) =>

@@ -8,10 +8,12 @@ export function CodeEditor({
   value,
   onChange,
   path,
+  readOnly = false,
 }: {
   value: string;
   onChange: (value: string) => void;
   path: string;
+  readOnly?: boolean;
 }) {
   const root = useRef<HTMLDivElement>(null),
     callback = useRef(onChange);
@@ -23,6 +25,8 @@ export function CodeEditor({
       parent: root.current,
       extensions: [
         basicSetup,
+        EditorState.readOnly.of(readOnly),
+        EditorView.editable.of(!readOnly),
         syntaxHighlighting(oneDarkHighlightStyle),
         EditorState.lineSeparator.of(value.includes("\r\n") ? "\r\n" : "\n"),
         javascript({
@@ -60,7 +64,7 @@ export function CodeEditor({
       ],
     });
     return () => view.destroy();
-  }, [path]);
+  }, [path, readOnly]);
   return (
     <div className="code-editor" ref={root} aria-label={`Редактор ${path}`} />
   );

@@ -3,7 +3,7 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Copy } from "../icons";
 import { assistantSteps } from "../activity";
-import type { Message, QuestionResponse } from "../types";
+import type { ApprovalChoice, Message, QuestionResponse } from "../types";
 import { IconButton } from "./Primitives";
 import { ToolCalls } from "./ToolCalls";
 
@@ -23,7 +23,7 @@ export function AssistantContent({
   sessionId: string;
   retrySessionId?: string;
   onError: (message: string) => void;
-  onApprove: (callId: string, allowed: boolean) => void;
+  onApprove: (callId: string, allowed: boolean, remember?: ApprovalChoice) => void;
   onAnswer: (callId: string, response: QuestionResponse) => Promise<void>;
   onAgentOpen: (id: string) => void;
   onCopy: (text: string) => void;

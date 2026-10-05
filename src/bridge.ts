@@ -88,11 +88,11 @@ function previewBridge(): DesktopBridge {
     openProjectFolder: desktop,
     createSession: async (projectId = null) => {
       try {
-        requireProject(state, projectId);
+        if (projectId !== null) requireProject(state, projectId);
       } catch (error) {
         return { ok: false, error: (error as Error).message };
       }
-      const existing = findEmptySession(state.sessions, projectId!);
+      const existing = findEmptySession(state.sessions, projectId);
       if (existing) return ok(existing.id);
       const now = new Date().toISOString();
       const s: Session = {
@@ -328,6 +328,11 @@ function previewBridge(): DesktopBridge {
       const { key, clearKey, ...settings } = input;
       try {
         if ("theme" in settings) settings.theme = validateTheme(settings.theme);
+        if ("approvalModel" in settings)
+          models.selectApproval(
+            state.settings.baseUrl,
+            settings.approvalModel!,
+          );
       } catch (error) {
         return { ok: false, error: (error as Error).message };
       }
@@ -347,6 +352,7 @@ function previewBridge(): DesktopBridge {
             throw new Error();
           models.switchProvider(endpoint.href.replace(/\/+$/, ""));
           settings.baseUrl = state.settings.baseUrl;
+          settings.approvalModel = state.settings.approvalModel;
         } catch {
           return { ok: false, error: "Введите корректный адрес API с HTTPS" };
         }

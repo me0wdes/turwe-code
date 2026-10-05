@@ -580,11 +580,17 @@
   font-size: 11px;
   line-height: 1.65;
 }
-.tool-approval > div {
+.tool-approval > div,
+.approval-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
 }
+.approval-scope-menu { max-width: min(360px, calc(100vw - 24px)); }
+.approval-scope-hint { margin: 8px 10px; color: var(--secondary); font-size: 11px; line-height: 1.5; }
+.approval-scope-menu .dropdown-item-copy { white-space: normal; }
+.approval-scope-menu .dropdown-item-copy small { white-space: normal; overflow: visible; text-overflow: clip; }
 .permission-trigger {
   min-height: 28px;
   height: 28px;
@@ -596,9 +602,24 @@
 .permission-trigger.bypass {
   color: var(--warning);
 }
+.permission-trigger > span {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tool-review {
+  color: var(--secondary);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.saved-model-list + .model-default-field {
+  margin-top: 20px;
+}
 .permission-menu {
   width: 338px;
   max-width: calc(100vw - 24px);
+  max-height: min(560px, var(--radix-dropdown-menu-content-available-height));
 }
 .permission-menu .dropdown-item-copy small {
   white-space: normal;

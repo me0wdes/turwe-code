@@ -4,9 +4,12 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type CSSProperties,
+  type ReactNode,
+  type Ref,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useIsPresent } from "motion/react";
 import type { AppState, Session } from "../types";
 import {
   workspaceTools,
@@ -38,6 +41,7 @@ import { Menu } from "./Dropdown";
 import { IconButton } from "./Primitives";
 import { Workbench } from "./Workbench";
 import { fluid } from "../motion";
+import { useChatMotion } from "../chat-motion";
 import type { RevealEvent } from "../workspace-reveal";
 import "../workspace-dock.css";
 
@@ -160,6 +164,49 @@ const snapLabels: Record<DockSide, string> = {
   bottom: "Снизу",
 };
 type Drag = { tool: WorkspaceTool; side: DockSide | null };
+
+function DockSlot({
+  tool,
+  animated,
+  style,
+  children,
+  ref,
+}: {
+  tool: WorkspaceTool;
+  animated: boolean;
+  style?: CSSProperties;
+  children: (moving: boolean) => ReactNode;
+  ref?: Ref<HTMLDivElement>;
+}) {
+  const present = useIsPresent();
+  const [moving, setMoving] = useState(false);
+  return (
+    <motion.div
+      ref={ref}
+      className="dock-slot"
+      data-panel={tool}
+      style={{ ...style, borderRadius: 20 }}
+      layout={animated}
+      inert={!present}
+      initial={animated ? { opacity: 0 } : false}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={
+        animated ? { ...fluid.slow, opacity: fluid.fast } : { duration: 0 }
+      }
+      onLayoutAnimationStart={() => setMoving(true)}
+      onLayoutAnimationComplete={() => setMoving(false)}
+    >
+      <motion.div
+        className="dock-slot-content"
+        layout={animated ? "position" : false}
+      >
+        {children(!present || (animated && moving))}
+      </motion.div>
+    </motion.div>
+  );
+}
+
 export function WorkspaceDock({
   state,
   session,
@@ -183,6 +230,9 @@ export function WorkspaceDock({
   onError: (message: string) => void;
   onComment: (text: string) => void;
 }) {
+  const present = useIsPresent();
+  const animated = useChatMotion() && state.settings.motion;
+  const [railMoving, setRailMoving] = useState(animated);
   const root = useRef<HTMLElement>(null);
   const gesture = useRef<{
     x: number;
@@ -387,10 +437,20 @@ export function WorkspaceDock({
   );
 
   return (
-    <aside
+    <motion.aside
       ref={root}
       className={`workspace-dock ${bounds.overlay ? "dock-overlay" : ""} ${drag ? "is-dragging" : ""} ${resizing ? "is-resizing" : ""}`}
-      style={{ width, display: suspended ? "none" : undefined }}
+      style={{ display: suspended ? "none" : undefined }}
+      // Match SidebarRail: move real workspace bounds, keep panel contents at
+      // their final width, and clip the reveal instead of squeezing the text.
+      initial={animated ? { width: 0, marginRight: 0 } : false}
+      animate={{ width, marginRight: 8 }}
+      exit={{ width: 0, marginRight: 0 }}
+      transition={animated && !resizing ? fluid.slow : { duration: 0 }}
+      onAnimationStart={() => setRailMoving(true)}
+      onAnimationComplete={() => setRailMoving(false)}
+      inert={!present || suspended}
+      aria-hidden={!present || suspended}
       aria-label="Панели проекта"
       data-axis={axis}
       data-suspended={suspended || undefined}
@@ -439,163 +499,186 @@ export function WorkspaceDock({
         onPointerUp={endResize}
         onLostPointerCapture={() => setResizing(false)}
       />
-      <div
-        className="dock-grid"
-        style={
-          two
-            ? axis === "rows"
-              ? {
-                  gridTemplateRows: `minmax(0, ${layout.split}fr) 10px minmax(0, ${100 - layout.split}fr)`,
-                }
-              : {
-                  gridTemplateColumns: `minmax(0, ${layout.split}fr) 10px minmax(0, ${100 - layout.split}fr)`,
-                }
-            : undefined
+      <motion.div
+        className="dock-viewport"
+        initial={
+          animated ? { opacity: 0, transform: "translateX(20px)" } : false
         }
+        animate={{ opacity: 1, transform: "translateX(0px)" }}
+        exit={{ opacity: 0, transform: animated ? "translateX(20px)" : "none" }}
+        transition={animated ? fluid.slow : { duration: 0 }}
       >
-        {layout.panels.map((tool, index) => (
-          <div
-            key={tool}
-            className="dock-slot"
-            style={
-              two
-                ? axis === "rows"
-                  ? { gridRow: index * 2 + 1, gridColumn: 1 }
-                  : { gridColumn: index * 2 + 1, gridRow: 1 }
-                : undefined
-            }
-            data-panel={tool}
-          >
-            <Workbench
-              state={state}
-              session={session}
-              tab={tool}
-              reveal={
-                reveals[tool]?.sessionId === session.id
-                  ? reveals[tool]
-                  : undefined
-              }
-              onError={onError}
-              onComment={onComment}
-              hidden={hidden || suspended || !!drag || resizing}
-              layoutKey={`${axis}:${layout.panels.join(":")}:${width}:${layout.split}`}
-              title={
-                <button
-                  className="panel-drag-title"
-                  type="button"
-                  aria-label={`Переместить: ${panelName(tool)}`}
-                  aria-disabled={!two}
-                  tabIndex={two ? 0 : -1}
-                  data-draggable={two}
-                  title={
-                    two
-                      ? "Перетащите к краю панели, чтобы изменить расположение"
-                      : panelName(tool)
+        <div
+          className="dock-grid"
+          style={{
+            width,
+            ...(two
+              ? axis === "rows"
+                ? {
+                    gridTemplateRows: `minmax(0, ${layout.split}fr) 10px minmax(0, ${100 - layout.split}fr)`,
                   }
-                  onPointerDown={(event) => startDrag(event, tool)}
-                  onPointerMove={dragMove}
-                  onPointerUp={endDrag}
-                  onLostPointerCapture={() => {
-                    gesture.current = null;
-                    setDrag(null);
-                  }}
-                >
-                  <WorkspaceToolIcon tool={tool} />
-                  <span>{panelName(tool)}</span>
-                </button>
-              }
-              panelControls={
-                <>
-                  {bounds.overlay && index === 0 && !two && (
-                    <AddPanelMenu layout={layout} onAdd={onAdd} />
-                  )}
-                  {panelMenu(tool)}
-                </>
-              }
-              onClose={() => {
-                onLayout((current) => ({
-                  ...current,
-                  panels: current.panels.filter((id) => id !== tool),
-                }));
-                setAnnouncement(`Закрыто: ${panelName(tool)}`);
-                requestAnimationFrame(() =>
-                  (
-                    document.querySelector<HTMLButtonElement>(
-                      ".workspace-dock .add-panel-button",
-                    ) ||
-                    document.querySelector<HTMLButtonElement>(
-                      ".add-panel-button",
-                    )
-                  )?.focus(),
-                );
-              }}
-            />
-          </div>
-        ))}
-        {two && (
-          <div
-            className="dock-split-handle"
-            style={
-              axis === "rows"
-                ? { gridRow: 2, gridColumn: 1 }
-                : { gridColumn: 2, gridRow: 1 }
-            }
-            role="separator"
-            tabIndex={0}
-            aria-label="Размер двух панелей"
-            aria-orientation={axis === "rows" ? "horizontal" : "vertical"}
-            aria-valuemin={25}
-            aria-valuemax={75}
-            aria-valuenow={Math.round(layout.split)}
-            onDoubleClick={() =>
-              onLayout((current) => ({ ...current, split: 50 }))
-            }
-            onKeyDown={(event) => {
-              const before = axis === "rows" ? "ArrowUp" : "ArrowLeft",
-                after = axis === "rows" ? "ArrowDown" : "ArrowRight";
-              if ([before, after, "Home", "End"].includes(event.key)) {
-                event.preventDefault();
-                onLayout((current) => ({
-                  ...current,
-                  split:
-                    event.key === "Home"
-                      ? 25
-                      : event.key === "End"
-                        ? 75
-                        : clamp(
-                            current.split + (event.key === before ? -5 : 5),
-                            25,
-                            75,
-                          ),
-                }));
-              }
-            }}
-            onPointerDown={(event) => {
-              if (event.button !== 0) return;
-              event.currentTarget.setPointerCapture(event.pointerId);
-              setResizing(true);
-            }}
-            onPointerMove={(event) => {
-              if (
-                !resizing ||
-                !event.currentTarget.hasPointerCapture(event.pointerId)
-              )
-                return;
-              const rect = root.current!.getBoundingClientRect();
-              const part =
+                : {
+                    gridTemplateColumns: `minmax(0, ${layout.split}fr) 10px minmax(0, ${100 - layout.split}fr)`,
+                  }
+              : {}),
+          }}
+        >
+          <AnimatePresence initial={false} mode="popLayout">
+            {layout.panels.map((tool, index) => (
+              <DockSlot
+                key={tool}
+                tool={tool}
+                animated={animated && !resizing}
+                style={
+                  two
+                    ? axis === "rows"
+                      ? { gridRow: index * 2 + 1, gridColumn: 1 }
+                      : { gridColumn: index * 2 + 1, gridRow: 1 }
+                    : undefined
+                }
+              >
+                {(slotMoving) => (
+                  <Workbench
+                    state={state}
+                    session={session}
+                    tab={tool}
+                    reveal={
+                      reveals[tool]?.sessionId === session.id
+                        ? reveals[tool]
+                        : undefined
+                    }
+                    onError={onError}
+                    onComment={onComment}
+                    hidden={
+                      hidden ||
+                      suspended ||
+                      !present ||
+                      !!drag ||
+                      resizing ||
+                      slotMoving ||
+                      (animated && railMoving)
+                    }
+                    layoutKey={`${axis}:${layout.panels.join(":")}:${width}:${layout.split}`}
+                    title={
+                      <button
+                        className="panel-drag-title"
+                        type="button"
+                        aria-label={`Переместить: ${panelName(tool)}`}
+                        aria-disabled={!two}
+                        tabIndex={two ? 0 : -1}
+                        data-draggable={two}
+                        title={
+                          two
+                            ? "Перетащите к краю панели, чтобы изменить расположение"
+                            : panelName(tool)
+                        }
+                        onPointerDown={(event) => startDrag(event, tool)}
+                        onPointerMove={dragMove}
+                        onPointerUp={endDrag}
+                        onLostPointerCapture={() => {
+                          gesture.current = null;
+                          setDrag(null);
+                        }}
+                      >
+                        <WorkspaceToolIcon tool={tool} />
+                        <span>{panelName(tool)}</span>
+                      </button>
+                    }
+                    panelControls={
+                      <>
+                        {bounds.overlay && index === 0 && !two && (
+                          <AddPanelMenu layout={layout} onAdd={onAdd} />
+                        )}
+                        {panelMenu(tool)}
+                      </>
+                    }
+                    onClose={() => {
+                      onLayout((current) => ({
+                        ...current,
+                        panels: current.panels.filter((id) => id !== tool),
+                      }));
+                      setAnnouncement(`Закрыто: ${panelName(tool)}`);
+                      requestAnimationFrame(() =>
+                        (
+                          document.querySelector<HTMLButtonElement>(
+                            ".workspace-dock .add-panel-button",
+                          ) ||
+                          document.querySelector<HTMLButtonElement>(
+                            ".add-panel-button",
+                          )
+                        )?.focus(),
+                      );
+                    }}
+                  />
+                )}
+              </DockSlot>
+            ))}
+          </AnimatePresence>
+          {two && (
+            <div
+              className="dock-split-handle"
+              style={
                 axis === "rows"
-                  ? (event.clientY - rect.y) / rect.height
-                  : (event.clientX - rect.x) / rect.width;
-              onLayout((current) => ({
-                ...current,
-                split: clamp(part * 100, 25, 75),
-              }));
-            }}
-            onPointerUp={endResize}
-            onLostPointerCapture={() => setResizing(false)}
-          />
-        )}
-      </div>
+                  ? { gridRow: 2, gridColumn: 1 }
+                  : { gridColumn: 2, gridRow: 1 }
+              }
+              role="separator"
+              tabIndex={0}
+              aria-label="Размер двух панелей"
+              aria-orientation={axis === "rows" ? "horizontal" : "vertical"}
+              aria-valuemin={25}
+              aria-valuemax={75}
+              aria-valuenow={Math.round(layout.split)}
+              onDoubleClick={() =>
+                onLayout((current) => ({ ...current, split: 50 }))
+              }
+              onKeyDown={(event) => {
+                const before = axis === "rows" ? "ArrowUp" : "ArrowLeft",
+                  after = axis === "rows" ? "ArrowDown" : "ArrowRight";
+                if ([before, after, "Home", "End"].includes(event.key)) {
+                  event.preventDefault();
+                  onLayout((current) => ({
+                    ...current,
+                    split:
+                      event.key === "Home"
+                        ? 25
+                        : event.key === "End"
+                          ? 75
+                          : clamp(
+                              current.split + (event.key === before ? -5 : 5),
+                              25,
+                              75,
+                            ),
+                  }));
+                }
+              }}
+              onPointerDown={(event) => {
+                if (event.button !== 0) return;
+                event.currentTarget.setPointerCapture(event.pointerId);
+                setResizing(true);
+              }}
+              onPointerMove={(event) => {
+                if (
+                  !resizing ||
+                  !event.currentTarget.hasPointerCapture(event.pointerId)
+                )
+                  return;
+                const rect = root.current!.getBoundingClientRect();
+                const part =
+                  axis === "rows"
+                    ? (event.clientY - rect.y) / rect.height
+                    : (event.clientX - rect.x) / rect.width;
+                onLayout((current) => ({
+                  ...current,
+                  split: clamp(part * 100, 25, 75),
+                }));
+              }}
+              onPointerUp={endResize}
+              onLostPointerCapture={() => setResizing(false)}
+            />
+          )}
+        </div>
+      </motion.div>
       <AnimatePresence>
         {drag && (
           <motion.div
@@ -635,6 +718,6 @@ export function WorkspaceDock({
       <span className="sr-only" role="status" aria-live="polite">
         {announcement}
       </span>
-    </aside>
+    </motion.aside>
   );
 }
